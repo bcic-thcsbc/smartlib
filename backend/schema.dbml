@@ -70,7 +70,6 @@ Table users {
   password_hash text [not null, note: 'bcrypt hash; never expose to clients']
   full_name text [not null]
   gender text
-  date_of_birth text
   phone text
   email text
   avatar text

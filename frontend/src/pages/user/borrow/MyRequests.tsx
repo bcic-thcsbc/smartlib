@@ -54,6 +54,11 @@ export function MyRequests() {
               <tr key={item.id}>
                 <td>
                   <strong>{item.title}</strong>
+                  <small className="request-book-meta">
+                    {item.author ? `Tác giả: ${item.author}` : "Tác giả chưa cập nhật"}
+                    {item.publisher ? ` · NXB ${item.publisher}` : ""}
+                    {item.category ? ` · ${item.category}` : ""}
+                  </small>
                 </td>
                 <td>
                   {formatDate(item.desired_start_date)} →{" "}

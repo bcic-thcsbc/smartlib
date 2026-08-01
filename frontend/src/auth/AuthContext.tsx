@@ -14,6 +14,7 @@ interface AuthValue {
     department?: string;
     email?: string;
     phone?: string;
+    gender: "male" | "female";
   }) => Promise<User>;
   logout: () => Promise<void>;
 }

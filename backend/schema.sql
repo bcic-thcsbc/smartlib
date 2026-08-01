@@ -28,7 +28,6 @@ CREATE TABLE users (
   password_hash TEXT NOT NULL,
   full_name TEXT NOT NULL,
   gender TEXT,
-  date_of_birth TEXT,
   phone TEXT,
   email TEXT,
   avatar TEXT,

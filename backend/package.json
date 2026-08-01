@@ -8,6 +8,7 @@
     "backup": "node scripts/backup.js",
     "bootstrap-admin": "node scripts/bootstrap-admin.js",
     "reset-prototype": "node scripts/reset-prototype-data.js",
+    "reset-catalog": "node scripts/reset-catalog-data.js",
     "test": "node --test test/*.test.js"
   },
   "keywords": [],

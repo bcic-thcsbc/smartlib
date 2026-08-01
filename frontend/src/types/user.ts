@@ -11,6 +11,7 @@ export interface User {
   email?: string;
   phone?: string;
   status?: string;
+  gender?: "male" | "female";
 }
 export interface UserForm {
   username: string;
@@ -21,4 +22,5 @@ export interface UserForm {
   department?: string;
   email?: string;
   phone?: string;
+  gender?: "male" | "female";
 }

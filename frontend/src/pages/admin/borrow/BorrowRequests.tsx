@@ -64,7 +64,14 @@ export function BorrowRequests() {
             {items.map((item) => (
               <tr key={item.id}>
                 <td>{item.full_name}</td>
-                <td>{item.title}</td>
+                <td>
+                  <strong>{item.title}</strong>
+                  <small className="request-book-meta">
+                    {item.author ? `Tác giả: ${item.author}` : "Tác giả chưa cập nhật"}
+                    {item.publisher ? ` · NXB ${item.publisher}` : ""}
+                    {item.category ? ` · ${item.category}` : ""}
+                  </small>
+                </td>
                 <td>
                   {formatDate(
                     (item as any).desired_start_date || item.requested_at,

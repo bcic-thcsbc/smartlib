@@ -33,6 +33,9 @@ export interface BorrowRequest {
   user_id: number;
   book_id: number;
   title: string;
+  author?: string;
+  publisher?: string;
+  category?: string;
   full_name?: string;
   inventory_code?: string;
   status: string;

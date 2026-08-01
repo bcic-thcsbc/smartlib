@@ -96,6 +96,11 @@ export function BookDetail() {
             {book.author || "Chưa cập nhật tác giả"}
             {book.publisher ? ` · ${book.publisher}` : ""}
           </p>
+          <div className="detail-meta-grid">
+            <div><span>Tổng số</span><strong>{book.total_quantity} cuốn</strong></div>
+            <div><span>Đang mượn</span><strong>{book.borrowed_quantity || 0} cuốn</strong></div>
+            <div><span>Khả dụng</span><strong>{book.available_quantity} cuốn</strong></div>
+          </div>
           <div className="detail-description">
             <b>Thông tin sách</b>
             <p>{book.description || "Chưa có mô tả cho tựa sách này."}</p>

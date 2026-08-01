@@ -16,6 +16,8 @@ export interface Notification {
   created_at: string;
 }
 export const operationsApi = {
+  departments: () => api.get<Array<{ id: number; name: string }>>("/reference/departments"),
+  updateDepartments: (names: string[]) => api.put("/settings/departments", names),
   policies: () => api.get<Policy[]>("/settings/circulation"),
   updatePolicies: (data: Policy[]) =>
     api.put<Policy[]>("/settings/circulation", data),

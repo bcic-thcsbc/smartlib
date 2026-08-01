@@ -96,7 +96,9 @@ async function list(req, res) {
 }
 async function detail(req, res) {
   const book = await get(
-    "SELECT b.*,COUNT(bc.id) copy_count FROM books b LEFT JOIN book_copies bc ON bc.book_id=b.id WHERE b.id=? GROUP BY b.id",
+    `SELECT b.*,COUNT(bc.id) copy_count,
+      SUM(CASE WHEN bc.status='borrowed' THEN 1 ELSE 0 END) borrowed_quantity
+     FROM books b LEFT JOIN book_copies bc ON bc.book_id=b.id WHERE b.id=? GROUP BY b.id`,
     [req.params.id],
   );
   if (!book)

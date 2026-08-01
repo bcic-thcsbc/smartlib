@@ -56,6 +56,24 @@ async function settings(req, res) {
   );
   res.json(rows);
 }
+async function departments(req, res) {
+  res.json(await all("SELECT id,name,active,sort_order FROM subject_departments WHERE active=1 ORDER BY sort_order,name"));
+}
+async function updateDepartments(req, res) {
+  const names = [...new Set((Array.isArray(req.body) ? req.body : []).map((item) => String(item || "").trim()).filter(Boolean))];
+  if (!names.length) {
+    const error = new Error("Cần có ít nhất một tổ bộ môn.");
+    error.status = 400;
+    throw error;
+  }
+  await transaction(async () => {
+    await run("UPDATE subject_departments SET active=0,updated_at=CURRENT_TIMESTAMP");
+    for (const [index, name] of names.entries()) {
+      await run("INSERT INTO subject_departments(name,active,sort_order) VALUES(?,1,?) ON CONFLICT(name) DO UPDATE SET active=1,sort_order=excluded.sort_order,updated_at=CURRENT_TIMESTAMP", [name, index]);
+    }
+  });
+  await departments(req, res);
+}
 async function updateSettings(req, res) {
   const values = Array.isArray(req.body) ? req.body : [req.body];
   const result = await transaction(async () => {
@@ -188,6 +206,8 @@ module.exports = {
   readAllNotifications,
   settings,
   updateSettings,
+  departments,
+  updateDepartments,
   schoolSettings,
   updateSchoolSettings,
   reports,

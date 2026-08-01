@@ -11,6 +11,12 @@ import {
 } from "recharts";
 import { operationsApi } from "../../../api/operationsApi";
 
+function VietnameseTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0].payload;
+  return <div className="chart-tooltip"><strong>{row.title}</strong><span>Tổng lượt mượn: {row.total_loans || 0}</span><span>Đã trả: {row.returned || 0}</span><span>Quá hạn: {row.overdue || 0}</span></div>;
+}
+
 function save(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -97,7 +103,7 @@ export function DashboardReport() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="title" hide />
                   <YAxis allowDecimals={false} />
-                  <Tooltip />
+                  <Tooltip content={<VietnameseTooltip />} />
                   <Bar
                     dataKey="total_loans"
                     fill="#2E77DF"

@@ -14,7 +14,9 @@ test('production schema contains workflow tables and policies', async () => {
   const names = new Set(tables.map(row => row.name));
   for (const table of ['borrow_requests','borrow_items','circulation_policies','copy_incidents','notifications','audit_logs','sessions','schema_migrations']) assert.ok(names.has(table), table);
   const policies = await query('SELECT user_type,max_active_loans,loan_days FROM circulation_policies ORDER BY user_type');
-  assert.deepEqual(policies, [{ user_type: 'student', max_active_loans: 2, loan_days: 14 }, { user_type: 'teacher', max_active_loans: 5, loan_days: 30 }]);
+  assert.deepEqual(policies, [{ user_type: 'student', max_active_loans: 2, loan_days: 14 }, { user_type: 'teacher', max_active_loans: 5, loan_days: 365 }]);
+  const columns = await query("PRAGMA table_info(users)");
+  assert.equal(columns.some((column) => column.name === 'date_of_birth'), false);
 });
 
 test('copy status supports reservation and retirement', async () => {

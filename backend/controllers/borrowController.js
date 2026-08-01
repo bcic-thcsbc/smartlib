@@ -2,6 +2,15 @@ const { all, get, run, transaction } = require("../database/db");
 const { audit, notify } = require("../utils/audit");
 const { advance, closeReservationSlot } = require("./reservationController");
 const { formatDate } = require("../utils/presentation");
+const bcrypt = require("bcrypt");
+const {
+  normalizeClassName,
+  normalizePhone,
+  validClassName,
+  validGender,
+  validPhone,
+  visitorUsername,
+} = require("../utils/validation");
 
 const bad = (status, message) => Object.assign(new Error(message), { status });
 const dateOnly = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
@@ -189,6 +198,8 @@ async function validateCheckout(userId, copyIds, dueDate) {
   if (!dateOnly(dueDate) || dueDate < today())
     throw bad(400, "Ngày hạn trả không hợp lệ.");
   const policy = await policyFor(user.user_type);
+  if (dueDate > plusDays(today(), policy.loan_days))
+    throw bad(400, `Ngày hạn trả không được vượt quá ${policy.loan_days} ngày kể từ ngày mượn.`);
   if (await openIncident(userId))
     throw bad(409, "Tài khoản còn sự cố sách chưa xử lý.");
   const active = await activeItemCount(userId);
@@ -207,11 +218,35 @@ async function validateCheckout(userId, copyIds, dueDate) {
   return { user, copies };
 }
 
+async function createVisitorAccount(visitor) {
+  const { full_name, gender, class_name, email, phone } = visitor || {};
+  if (
+    !String(full_name || "").trim() || !validGender(gender) || !validClassName(class_name) ||
+    !String(email || "").match(/^\S+@\S+\.\S+$/) || !validPhone(phone)
+  ) throw bad(400, "Thông tin độc giả vãng lai không hợp lệ.");
+  const base = visitorUsername(full_name, class_name);
+  if (!base) throw bad(400, "Không thể tạo tên đăng nhập cho độc giả vãng lai.");
+  let username = base;
+  let suffix = 0;
+  while (await get("SELECT id FROM users WHERE username=?", [username])) {
+    suffix += 1;
+    username = `${base}_${suffix}`;
+  }
+  const password_hash = await bcrypt.hash(username, 10);
+  const result = await run(
+    `INSERT INTO users(username,password_hash,full_name,gender,phone,email,role,user_type,class_name,status)
+     VALUES(?,?,?,?,?,?,'user','student',?,'active')`,
+    [username, password_hash, full_name.trim(), gender, normalizePhone(phone), email.trim(), normalizeClassName(class_name)],
+  );
+  return { id: result.id, username, password: username };
+}
+
 async function create(req, res) {
-  const { user_id, copy_ids, due_date } = req.body;
+  const { user_id, visitor, copy_ids, due_date } = req.body;
   const result = await transaction(async () => {
+    const credentials = visitor ? await createVisitorAccount(visitor) : null;
     const { user, copies } = await validateCheckout(
-      Number(user_id),
+      credentials ? credentials.id : Number(user_id),
       copy_ids.map(Number),
       due_date,
     );
@@ -252,7 +287,7 @@ async function create(req, res) {
       "borrow",
       loan.id,
     );
-    return after;
+    return credentials ? { ...after, created_visitor: credentials } : after;
   });
   res.status(201).json(result);
 }
@@ -277,7 +312,7 @@ async function requestList(req, res) {
     params,
   );
   const requestQuery = [
-    "SELECT r.*, u.full_name, u.username, b.title, bc.inventory_code, rs.status reservation_status, rs.hold_deadline",
+    "SELECT r.*, u.full_name, u.username, b.title, b.author, b.publisher, b.category, bc.inventory_code, rs.status reservation_status, rs.hold_deadline",
     "FROM borrow_requests r",
     "JOIN users u ON u.id = r.user_id",
     "JOIN books b ON b.id = r.book_id",
@@ -502,6 +537,8 @@ async function checkoutRequest(req, res) {
     if (await openIncident(r.user_id))
       throw bad(409, "Tài khoản còn sự cố sách chưa xử lý.");
     const policy = await policyFor(r.user_type);
+    if (due > plusDays(today(), policy.loan_days))
+      throw bad(400, `Ngày hạn trả không được vượt quá ${policy.loan_days} ngày kể từ ngày mượn.`);
     if ((await activeItemCount(r.user_id)) >= policy.max_active_loans)
       throw bad(409, "Người dùng đã đạt giới hạn mượn sách.");
     const loan = await run(

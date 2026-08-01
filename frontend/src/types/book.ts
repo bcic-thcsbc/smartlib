@@ -11,6 +11,7 @@ export interface Book {
   total_quantity: number;
   available_quantity: number;
   status?: "active" | "archived";
+  borrowed_quantity?: number;
 }
 export interface BookCopy {
   id: number;

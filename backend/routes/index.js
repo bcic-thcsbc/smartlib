@@ -35,6 +35,7 @@ router.post("/auth/login", asyncHandler(auth.login));
 router.post("/auth/register", asyncHandler(auth.register));
 router.post("/auth/logout", auth.logout);
 router.get("/auth/me", auth.me);
+router.get("/reference/departments", asyncHandler(operations.departments));
 router.get("/dashboard", requireAdmin, asyncHandler(dashboard.summary));
 router.get("/search", requireLogin, asyncHandler(library.globalSearch));
 router.get("/users", requireAdmin, asyncHandler(users.list));
@@ -149,6 +150,7 @@ router.put(
   requireAdmin,
   asyncHandler(operations.updateSettings),
 );
+router.put("/settings/departments", requireAdmin, asyncHandler(operations.updateDepartments));
 router.get(
   "/settings/school",
   requireAdmin,

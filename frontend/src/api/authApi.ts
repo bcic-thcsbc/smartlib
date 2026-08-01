@@ -12,6 +12,7 @@ export const authApi = {
     department?: string;
     email?: string;
     phone?: string;
+    gender: "male" | "female";
   }) => api.post<{ user: User }>("/auth/register", data),
   logout: () => api.post("/auth/logout"),
   me: () => api.get<{ user: User | null }>("/auth/me"),

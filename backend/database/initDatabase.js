@@ -12,7 +12,7 @@ async function createFreshSchema() {
   await exec(`
     CREATE TABLE users (
       id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL,
-      full_name TEXT NOT NULL, gender TEXT, date_of_birth TEXT, phone TEXT, email TEXT, avatar TEXT,
+      full_name TEXT NOT NULL, gender TEXT, phone TEXT, email TEXT, avatar TEXT,
       role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('admin','user')), user_type TEXT CHECK(user_type IN ('student','teacher')),
       class_name TEXT, department TEXT, status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','inactive')),
       created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -145,7 +145,7 @@ async function ensureSupplementalSchema() {
     CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at);
   `);
   await run(`INSERT OR IGNORE INTO circulation_policies (user_type,max_active_loans,loan_days,max_renewals,renewal_days,pickup_hours) VALUES
-    ('student',2,14,1,7,48),('teacher',5,30,1,14,48)`);
+    ('student',2,14,1,7,48),('teacher',5,365,0,14,48)`);
   await run(
     "UPDATE books SET status='active' WHERE status IS NULL OR status='' ",
   );
@@ -221,6 +221,28 @@ async function ensureCatalogSchema() {
     );
 }
 
+async function ensurePeopleSchema() {
+  if (await columnExists("users", "date_of_birth"))
+    await run("ALTER TABLE users DROP COLUMN date_of_birth");
+  await exec(`
+    CREATE TABLE IF NOT EXISTS subject_departments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      active INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+  const defaults = [
+    "Toán - Tin", "Ngữ văn", "Tiếng Anh", "Khoa học tự nhiên",
+    "Lịch sử - Địa lý", "Giáo dục công dân", "Công nghệ",
+    "Giáo dục thể chất", "Nghệ thuật",
+  ];
+  for (const [index, name] of defaults.entries())
+    await run("INSERT OR IGNORE INTO subject_departments(name,sort_order) VALUES(?,?)", [name, index]);
+}
+
 async function refreshBookSummaries() {
   await run(`UPDATE books
     SET total_quantity=(SELECT COUNT(*) FROM book_copies WHERE book_id=books.id),
@@ -261,6 +283,12 @@ async function initDatabase() {
     await ensureCatalogSchema();
     await run("INSERT OR IGNORE INTO schema_migrations(version) VALUES (5)");
   } else await ensureCatalogSchema();
+  const v6 = await get("SELECT version FROM schema_migrations WHERE version=6");
+  if (!v6) {
+    await ensurePeopleSchema();
+    await run("UPDATE circulation_policies SET loan_days=365,max_renewals=0,pickup_hours=48,updated_at=CURRENT_TIMESTAMP WHERE user_type='teacher'");
+    await run("INSERT OR IGNORE INTO schema_migrations(version) VALUES (6)");
+  } else await ensurePeopleSchema();
   await refreshBookSummaries();
 }
 

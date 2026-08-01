@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
+    "start": "node scripts/ensure-database.js && node server.js",
+    "dev": "node scripts/ensure-database.js && node --watch server.js",
     "backup": "node scripts/backup.js",
     "bootstrap-admin": "node scripts/bootstrap-admin.js",
     "reset-prototype": "node scripts/reset-prototype-data.js",

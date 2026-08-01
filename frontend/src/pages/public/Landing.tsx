@@ -19,7 +19,7 @@ export function Landing() {
           {loading ? (
             <span className="nav-loading">Đang kiểm tra phiên...</span>
           ) : user ? (
-            <Link to={libraryPath}>Vào thư viện</Link>
+            <Link to={libraryPath}>Truy cập thư viện số</Link>
           ) : (
             <>
               <Link to="/login">Đăng nhập</Link>
@@ -31,22 +31,23 @@ export function Landing() {
       <section className="landing-hero">
         <div className="hero-copy">
           <div className="hero-badge">
-            <Sparkles size={16} /> Thư viện THCS Bình Chuẩn
+            <Sparkles size={16} /> Thư viện số Trường THCS Bình Chuẩn
           </div>
           <h1>
-            Đọc nhiều hơn.
+            Phát triển
             <br />
-            <span>Mượn sách dễ hơn.</span>
+            <span>văn hóa đọc</span>
+            <br />
+            học đường.
           </h1>
           <p>
-            Tra cứu tựa sách, xem lịch phục vụ của từng quyển và gửi yêu cầu
-            mượn theo thời gian bạn cần.
+            Số hóa công tác quản lý thư viện, kết nối học sinh với tri thức và đồng hành cùng nhà trường trong việc phát triển văn hóa đọc.
           </p>
           <div className="hero-actions">
             {!loading &&
               (user ? (
                 <Link className="primary" to={libraryPath}>
-                  Vào thư viện <ArrowRight size={18} />
+                  Truy cập thư viện số <ArrowRight size={18} />
                 </Link>
               ) : (
                 <>

@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, KeyRound } from "lucide-react";
+import { ArrowRight, BookOpen } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -31,7 +31,7 @@ export function Login() {
         ?.pathname;
       navigate(
         from ||
-          (account.role === "admin" ? "/admin/dashboard" : "/user/dashboard"),
+        (account.role === "admin" ? "/admin/dashboard" : "/user/dashboard"),
         { replace: true },
       );
     } catch (error) {
@@ -48,9 +48,9 @@ export function Login() {
           <BookOpen size={22} />
           <span>SMARTLIB</span>
         </Link>
-        <p className="eyebrow">Thư viện THCS Bình Chuẩn</p>
+        <p className="eyebrow">Thư viện số Trường THCS Bình Chuẩn</p>
         <h1>Đăng nhập</h1>
-        <p className="muted">Dùng tài khoản thư viện của bạn để tiếp tục.</p>
+        <p className="muted">Dùng tài khoản thư viện số của bạn để tiếp tục.</p>
         {authLoading ? (
           <div className="auth-loading">Đang kiểm tra phiên đăng nhập...</div>
         ) : (
@@ -82,9 +82,6 @@ export function Login() {
           </form>
         )}
         <div className="auth-footer">
-          <span>
-            <KeyRound size={15} /> Tài khoản thủ thư được nhà trường cấp.
-          </span>
           <p>
             Chưa có tài khoản? <Link to="/register">Đăng ký</Link>
           </p>

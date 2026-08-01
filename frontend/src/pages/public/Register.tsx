@@ -107,10 +107,10 @@ export function Register() {
           <BookOpen size={22} />
           <span>SMARTLIB</span>
         </Link>
-        <p className="eyebrow">Thư viện THCS Bình Chuẩn</p>
+        <p className="eyebrow">Thư viện số Trường THCS Bình Chuẩn</p>
         <h1>Tạo tài khoản</h1>
         <p className="muted">
-          Các trường có dấu <b>*</b> là bắt buộc.
+          Nhập đầy đủ thông tin của bạn để tạo tài khoản thư viện số.
         </p>
         {authLoading ? (
           <div className="auth-loading">Đang kiểm tra phiên đăng nhập...</div>
@@ -173,7 +173,6 @@ export function Register() {
                 <GraduationCap size={20} />
                 <span>
                   <strong>Học sinh</strong>
-                  <small>Đặt mượn và theo dõi sách</small>
                 </span>
                 <CheckCircle2 className="role-check" size={17} />
               </button>
@@ -190,7 +189,6 @@ export function Register() {
                 <School size={20} />
                 <span>
                   <strong>Giáo viên</strong>
-                  <small>Tra cứu tài liệu giảng dạy</small>
                 </span>
                 <CheckCircle2 className="role-check" size={17} />
               </button>

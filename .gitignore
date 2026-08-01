@@ -1,0 +1,46 @@
+# Dependencies and generated builds
+**/node_modules/
+frontend/dist/
+coverage/
+*.tsbuildinfo
+
+# Local environment files. Templates are intentionally versioned.
+.env
+.env.*
+!.env.example
+!.env.docker.example
+!.env.vps.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# SQLite runtime state and library file storage
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db-journal
+!backend/schema.sqlite
+**/backups/
+**/uploads/
+
+# Logs and local process output
+logs/
+*.log
+*.out
+*.err
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor and operating-system files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

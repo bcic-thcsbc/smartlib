@@ -1,0 +1,265 @@
+// SmartLib database diagram source.
+// Compatible with dbdiagram.io and other DBML viewers.
+
+Enum user_role {
+  admin
+  user
+}
+
+Enum user_type {
+  student
+  teacher
+}
+
+Enum user_status {
+  active
+  inactive
+}
+
+Enum book_status {
+  active
+  archived
+}
+
+Enum copy_status {
+  available
+  reserved
+  borrowed
+  lost
+  damaged
+  retired
+}
+
+Enum request_status {
+  pending
+  approved
+  rejected
+  cancelled
+  expired
+  fulfilled
+}
+
+Enum borrow_status {
+  active
+  overdue
+  partially_returned
+  returned
+}
+
+Enum item_disposition {
+  borrowed
+  returned
+  lost
+  damaged
+}
+
+Enum incident_type {
+  lost
+  damaged
+}
+
+Enum incident_status {
+  open
+  resolved
+  waived
+}
+
+Table users {
+  id integer [pk, increment]
+  username text [not null, unique]
+  password_hash text [not null, note: 'bcrypt hash; never expose to clients']
+  full_name text [not null]
+  gender text
+  date_of_birth text
+  phone text
+  email text
+  avatar text
+  role user_role [not null, default: 'user']
+  user_type user_type
+  class_name text
+  department text
+  status user_status [not null, default: 'active']
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    username [unique]
+    full_name
+  }
+}
+
+Table books {
+  id integer [pk, increment]
+  title text [not null]
+  isbn text
+  author text
+  publisher text
+  publish_year integer
+  category text
+  description text
+  cover_image text
+  total_quantity integer [not null, default: 0, note: 'Derived from non-retired copies']
+  available_quantity integer [not null, default: 0, note: 'Derived from copies with status=available']
+  status book_status [not null, default: 'active']
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    title
+    isbn
+  }
+}
+
+Table book_copies {
+  id integer [pk, increment]
+  book_id integer [not null]
+  inventory_code text [not null, unique]
+  condition text [not null, default: 'Good']
+  status copy_status [not null, default: 'available']
+  shelf text
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    inventory_code [unique]
+    (book_id, status)
+  }
+}
+
+Table circulation_policies {
+  user_type user_type [pk]
+  max_active_loans integer [not null]
+  loan_days integer [not null]
+  max_renewals integer [not null, default: 1]
+  renewal_days integer [not null]
+  pickup_hours integer [not null, default: 48]
+  updated_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table borrow_requests {
+  id integer [pk, increment]
+  user_id integer [not null]
+  book_id integer [not null]
+  reserved_copy_id integer
+  status request_status [not null, default: 'pending']
+  requested_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+  decision_at datetime
+  pickup_deadline datetime
+  decided_by integer
+  reason text
+  notes text
+
+  Indexes {
+    (status, requested_at)
+  }
+}
+
+Table borrows {
+  id integer [pk, increment]
+  user_id integer [not null]
+  borrow_date date [not null]
+  due_date date [not null]
+  return_date date
+  status borrow_status [not null, default: 'active']
+  created_by integer
+  request_id integer [note: 'Logical link to the fulfilled borrow request']
+  notes text
+  renew_count integer [not null, default: 0]
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    (user_id, status)
+    (due_date, status)
+  }
+}
+
+Table borrow_items {
+  id integer [pk, increment]
+  borrow_id integer [not null]
+  book_copy_id integer [not null]
+  returned_at datetime
+  condition_out text
+  condition_in text
+  disposition item_disposition [not null, default: 'borrowed']
+  notes text
+
+  Indexes {
+    (borrow_id, disposition)
+  }
+}
+
+Table copy_incidents {
+  id integer [pk, increment]
+  book_copy_id integer [not null]
+  borrow_item_id integer
+  user_id integer [not null]
+  type incident_type [not null]
+  severity text
+  description text
+  amount integer [note: 'Optional amount; monetary fines are not required by default']
+  status incident_status [not null, default: 'open']
+  resolved_at datetime
+  resolved_by integer
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table notifications {
+  id integer [pk, increment]
+  user_id integer [not null]
+  type text [not null]
+  title text [not null]
+  body text [not null]
+  entity_type text
+  entity_id integer
+  read_at datetime
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    (user_id, read_at, created_at)
+  }
+}
+
+Table audit_logs {
+  id integer [pk, increment]
+  actor_id integer
+  action text [not null]
+  entity_type text [not null]
+  entity_id integer
+  before_json text
+  after_json text
+  ip_address text
+  created_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    created_at
+  }
+}
+
+Table schema_migrations {
+  version integer [pk]
+  applied_at datetime [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table sessions {
+  session_id text [pk]
+  data text [not null]
+  expires_at integer [not null, note: 'Unix epoch milliseconds']
+}
+
+Ref: book_copies.book_id > books.id [delete: restrict]
+Ref: borrow_requests.user_id > users.id
+Ref: borrow_requests.book_id > books.id
+Ref: borrow_requests.reserved_copy_id > book_copies.id
+Ref: borrow_requests.decided_by > users.id
+Ref: borrows.user_id > users.id
+Ref: borrows.created_by > users.id
+Ref: borrows.request_id > borrow_requests.id
+Ref: borrow_items.borrow_id > borrows.id [delete: cascade]
+Ref: borrow_items.book_copy_id > book_copies.id
+Ref: copy_incidents.book_copy_id > book_copies.id
+Ref: copy_incidents.borrow_item_id > borrow_items.id
+Ref: copy_incidents.user_id > users.id
+Ref: copy_incidents.resolved_by > users.id
+Ref: notifications.user_id > users.id [delete: cascade]
+Ref: audit_logs.actor_id > users.id

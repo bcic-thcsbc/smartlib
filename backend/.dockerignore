@@ -1,0 +1,7 @@
+node_modules
+database.sqlite*
+backups
+uploads
+server.out
+server.err
+.env

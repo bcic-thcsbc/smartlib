@@ -1,5 +1,5 @@
-import { Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { bookApi } from "../../../api/bookApi";
 import type { Book } from "../../../types/book";
@@ -7,6 +7,9 @@ import { Toolbar } from "../../../components/common/Toolbar";
 import { EmptyState } from "../../../components/common/EmptyState";
 import { Pagination } from "../../../components/common/Pagination";
 import { Selector } from "../../../components/common/Selector";
+import { ConfirmDialog } from "../../../components/common/ConfirmDialog";
+import { RowActionMenu } from "../../../components/common/RowActionMenu";
+import { PageError } from "../../../components/common/PageError";
 import { BookFormModal } from "./BookFormModal";
 import { errorMessage } from "../../../utils/format";
 
@@ -26,7 +29,9 @@ export function BookList() {
   const [editing, setEditing] = useState<Book | null>(null);
   const [show, setShow] = useState(false);
   const [selected, setSelected] = useState<number[]>([]);
-  const load = () =>
+  const [deleting, setDeleting] = useState<number[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(() =>
     bookApi
       .list({
         q: query,
@@ -40,13 +45,14 @@ export function BookList() {
         setBooks(response.data.data);
         setPagination(response.data.pagination);
         setSelected([]);
+        setError(null);
       })
-      .catch((error) =>
-        toast.error(errorMessage(error, "Không thể tải tựa sách")),
-      );
+      .catch((loadError) =>
+        setError(errorMessage(loadError, "Không thể tải tựa sách")),
+      ), [availability, category, page, query, year]);
   useEffect(() => {
     load();
-  }, [query, category, year, availability, page]);
+  }, [load]);
   const filter = (setter: (value: string) => void, value: string) => {
     setter(value);
     setPage(1);
@@ -67,13 +73,7 @@ export function BookList() {
     }
   };
   const remove = async (ids: number[]) => {
-    if (
-      !ids.length ||
-      !window.confirm(
-        `Xóa vĩnh viễn ${ids.length} tựa sách cùng dữ liệu liên quan?`,
-      )
-    )
-      return;
+    if (!ids.length) return;
     try {
       await bookApi.removeMany(ids);
       toast.success(`Đã xóa ${ids.length} tựa sách`);
@@ -124,12 +124,15 @@ export function BookList() {
           </>
         }
       />
+      {error && <PageError message={error} onRetry={() => void load()} />}
+      {!error && (
+      <>
       {selected.length > 0 && (
         <div className="selection-bar">
           <span>Đã chọn {selected.length} tựa sách</span>
           <button
             className="danger-button"
-            onClick={() => void remove(selected)}
+            onClick={() => setDeleting(selected)}
           >
             <Trash2 size={16} />
             Xóa đã chọn
@@ -189,21 +192,13 @@ export function BookList() {
                 <td>{book.total_quantity}</td>
                 <td>{book.available_quantity}</td>
                 <td>
-                  <button
-                    className="row-action"
-                    onClick={() => {
-                      setEditing(book);
-                      setShow(true);
-                    }}
-                  >
-                    Sửa
-                  </button>
-                  <button
-                    className="row-action danger-text"
-                    onClick={() => void remove([book.id])}
-                  >
-                    Xóa
-                  </button>
+                  <RowActionMenu
+                    label={`Thao tác cho ${book.title}`}
+                    actions={[
+                      { label: "Sửa", icon: Pencil, onSelect: () => { setEditing(book); setShow(true); } },
+                      { label: "Xóa", icon: Trash2, tone: "danger", onSelect: () => setDeleting([book.id]) },
+                    ]}
+                  />
                 </td>
               </tr>
             ))}
@@ -221,6 +216,8 @@ export function BookList() {
           onChange={setPage}
         />
       </section>
+      </>
+      )}
       {show && (
         <BookFormModal
           initial={editing || undefined}
@@ -231,6 +228,7 @@ export function BookList() {
           onSave={save}
         />
       )}
+      {deleting && <ConfirmDialog title="Xóa tựa sách" description={`Xóa vĩnh viễn ${deleting.length} tựa sách cùng dữ liệu liên quan?`} confirmLabel="Xóa tựa sách" onClose={() => setDeleting(null)} onConfirm={async () => { await remove(deleting); setDeleting(null); }} />}
     </>
   );
 }

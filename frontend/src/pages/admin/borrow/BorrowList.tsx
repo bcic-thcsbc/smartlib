@@ -1,21 +1,35 @@
-import { useEffect, useState } from "react";
+import { AlertTriangle, Eye, RotateCcw, XCircle } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { borrowApi } from "../../../api/borrowApi";
 import type { Loan } from "../../../types/borrow";
 import { Toolbar } from "../../../components/common/Toolbar";
 import { EmptyState } from "../../../components/common/EmptyState";
+import { ConfirmDialog } from "../../../components/common/ConfirmDialog";
+import { StatusBadge } from "../../../components/common/StatusBadge";
+import { PageError } from "../../../components/common/PageError";
+import { RowActionMenu } from "../../../components/common/RowActionMenu";
 import { errorMessage, formatDate } from "../../../utils/format";
 
 export function BorrowList() {
   const [loans, setLoans] = useState<Loan[]>([]);
+  const [pendingAction, setPendingAction] = useState<{ type: "return" | "lost" | "damaged"; loan: Loan; itemId: number }>();
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const load = () => borrowApi.list().then((r) => setLoans(r.data.data));
+  const load = useCallback(async () => {
+    try {
+      const response = await borrowApi.list();
+      setLoans(response.data.data);
+      setError(null);
+    } catch (loadError) {
+      setError(errorMessage(loadError, "Không thể tải phiếu mượn"));
+    }
+  }, []);
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
   const returnItem = async (loan: Loan, itemId: number) => {
-    if (!window.confirm("Xác nhận đã nhận lại bản sách này?")) return;
     try {
       await borrowApi.returnItem(loan.id, itemId);
       toast.success("Đã ghi nhận trả sách");
@@ -29,14 +43,6 @@ export function BorrowList() {
     itemId: number,
     type: "lost" | "damaged",
   ) => {
-    if (
-      !window.confirm(
-        type === "lost"
-          ? "Xác nhận mất bản sách?"
-          : "Xác nhận bản sách bị hỏng?",
-      )
-    )
-      return;
     try {
       if (type === "lost") await borrowApi.markLost(loan.id, itemId);
       else await borrowApi.markDamaged(loan.id, itemId);
@@ -54,6 +60,8 @@ export function BorrowList() {
         action="Tạo phiếu mượn"
         onAction={() => navigate("/admin/borrow/new")}
       />
+      {error && <PageError message={error} onRetry={() => void load()} />}
+      {!error && (
       <section className="panel table-panel">
         <table>
           <thead>
@@ -83,28 +91,14 @@ export function BorrowList() {
                       <span>{item.title}</span>
                       <small className="mono">{item.inventory_code}</small>
                       {item.disposition === "borrowed" && (
-                        <div>
-                          <button
-                            className="row-action"
-                            onClick={() => returnItem(loan, item.item_id)}
-                          >
-                            Trả
-                          </button>
-                          <button
-                            className="row-action danger-text"
-                            onClick={() =>
-                              incident(loan, item.item_id, "damaged")
-                            }
-                          >
-                            Hỏng
-                          </button>
-                          <button
-                            className="row-action danger-text"
-                            onClick={() => incident(loan, item.item_id, "lost")}
-                          >
-                            Mất
-                          </button>
-                        </div>
+                        <RowActionMenu
+                          label={`Thao tác cho ${item.inventory_code}`}
+                          actions={[
+                            { label: "Ghi nhận trả", icon: RotateCcw, onSelect: () => setPendingAction({ type: "return", loan, itemId: item.item_id }) },
+                            { label: "Đánh dấu hỏng", icon: AlertTriangle, tone: "danger", onSelect: () => setPendingAction({ type: "damaged", loan, itemId: item.item_id }) },
+                            { label: "Đánh dấu mất", icon: XCircle, tone: "danger", onSelect: () => setPendingAction({ type: "lost", loan, itemId: item.item_id }) },
+                          ]}
+                        />
                       )}
                     </div>
                   ))}
@@ -112,7 +106,7 @@ export function BorrowList() {
                 <td>{formatDate(loan.borrow_date)}</td>
                 <td>{formatDate(loan.due_date)}</td>
                 <td>
-                  <span className={`status ${loan.status}`}>
+                  <StatusBadge status={loan.status}>
                     {loan.status === "active"
                       ? "Đang mượn"
                       : loan.status === "overdue"
@@ -120,16 +114,16 @@ export function BorrowList() {
                         : loan.status === "returned"
                           ? "Đã trả"
                           : "Trả một phần"}
-                  </span>
+                  </StatusBadge>
                 </td>
                 <td>
                   {loan.status !== "returned" && (
-                    <button
-                      className="row-action"
-                      onClick={() => navigate(`/admin/borrow/${loan.id}`)}
-                    >
-                      Chi tiết
-                    </button>
+                    <RowActionMenu
+                      label={`Thao tác cho phiếu mượn ${loan.id}`}
+                      actions={[
+                        { label: "Chi tiết", icon: Eye, onSelect: () => navigate(`/admin/borrow/${loan.id}`) },
+                      ]}
+                    />
                   )}
                 </td>
               </tr>
@@ -143,6 +137,8 @@ export function BorrowList() {
           />
         )}
       </section>
+      )}
+      {pendingAction && <ConfirmDialog title={pendingAction.type === "return" ? "Xác nhận trả sách" : pendingAction.type === "lost" ? "Xác nhận mất sách" : "Xác nhận sách hỏng"} description={pendingAction.type === "return" ? "Xác nhận đã nhận lại bản sách này." : pendingAction.type === "lost" ? "Sự cố mất sách sẽ được ghi nhận." : "Sự cố hỏng sách sẽ được ghi nhận."} confirmLabel={pendingAction.type === "return" ? "Xác nhận trả" : "Xác nhận"} onClose={() => setPendingAction(undefined)} onConfirm={async () => { if (pendingAction.type === "return") await returnItem(pendingAction.loan, pendingAction.itemId); else await incident(pendingAction.loan, pendingAction.itemId, pendingAction.type); setPendingAction(undefined); }} />}
     </>
   );
 }

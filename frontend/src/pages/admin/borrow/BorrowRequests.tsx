@@ -1,7 +1,11 @@
-import { useEffect, useState } from "react";
+import { Check, PackageCheck, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { borrowApi } from "../../../api/borrowApi";
 import { EmptyState } from "../../../components/common/EmptyState";
+import { StatusBadge } from "../../../components/common/StatusBadge";
+import { PageError } from "../../../components/common/PageError";
+import { RowActionMenu } from "../../../components/common/RowActionMenu";
 import { Toolbar } from "../../../components/common/Toolbar";
 import type { BorrowRequest } from "../../../types/borrow";
 import { errorMessage, formatDate } from "../../../utils/format";
@@ -17,12 +21,20 @@ const statusLabel = (value: string) =>
 
 export function BorrowRequests() {
   const [items, setItems] = useState<BorrowRequest[]>([]);
-  const load = () =>
-    borrowApi.requests().then((response) => setItems(response.data.data));
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    try {
+      const response = await borrowApi.requests();
+      setItems(response.data.data);
+      setError(null);
+    } catch (loadError) {
+      setError(errorMessage(loadError, "Không thể tải yêu cầu mượn"));
+    }
+  }, []);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const act = async (id: number, action: "approve" | "reject" | "checkout") => {
     try {
@@ -49,6 +61,8 @@ export function BorrowRequests() {
   return (
     <>
       <Toolbar title="Yêu cầu mượn" count={items.length} />
+      {error && <PageError message={error} onRetry={() => void load()} />}
+      {!error && (
       <section className="panel table-panel">
         <table>
           <thead>
@@ -79,35 +93,28 @@ export function BorrowRequests() {
                   → {formatDate((item as any).planned_due_date)}
                 </td>
                 <td>
-                  <span className={`status ${item.status}`}>
+                  <StatusBadge status={item.status}>
                     {statusLabel(item.status)}
-                  </span>
+                  </StatusBadge>
                 </td>
                 <td>
                   {item.status === "pending" && (
-                    <>
-                      <button
-                        className="row-action"
-                        onClick={() => void act(item.id, "approve")}
-                      >
-                        Duyệt tự động
-                      </button>
-                      <button
-                        className="row-action danger-text"
-                        onClick={() => void act(item.id, "reject")}
-                      >
-                        Từ chối
-                      </button>
-                    </>
+                    <RowActionMenu
+                      label={`Thao tác cho yêu cầu ${item.title}`}
+                      actions={[
+                        { label: "Duyệt tự động", icon: Check, onSelect: () => void act(item.id, "approve") },
+                        { label: "Từ chối", icon: X, tone: "danger", onSelect: () => void act(item.id, "reject") },
+                      ]}
+                    />
                   )}
                   {item.status === "approved" &&
                     item.reservation_status === "ready_for_pickup" && (
-                      <button
-                        className="row-action"
-                        onClick={() => void act(item.id, "checkout")}
-                      >
-                        Xác nhận giao
-                      </button>
+                      <RowActionMenu
+                        label={`Thao tác cho yêu cầu ${item.title}`}
+                        actions={[
+                          { label: "Xác nhận giao", icon: PackageCheck, onSelect: () => void act(item.id, "checkout") },
+                        ]}
+                      />
                     )}
                   {item.status === "approved" &&
                     item.reservation_status !== "ready_for_pickup" && (
@@ -127,6 +134,7 @@ export function BorrowRequests() {
           />
         )}
       </section>
+      )}
     </>
   );
 }

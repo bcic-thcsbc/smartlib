@@ -1,11 +1,14 @@
 import { ArrowLeft, BookOpen, CalendarDays, UserRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { borrowApi } from "../../../api/borrowApi";
 import { EmptyState } from "../../../components/common/EmptyState";
 import { PageLoader } from "../../../components/common/PageLoader";
+import { StatusBadge } from "../../../components/common/StatusBadge";
+import { PageError } from "../../../components/common/PageError";
 import type { Loan } from "../../../types/borrow";
 import { formatDate, formatWeekday } from "../../../utils/format";
+import { errorMessage } from "../../../utils/format";
 
 function statusLabel(status: string) {
   return (
@@ -21,12 +24,16 @@ function statusLabel(status: string) {
 export function BorrowDetail() {
   const { id } = useParams();
   const [loan, setLoan] = useState<Loan>();
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (id)
-      borrowApi.detail(Number(id)).then((response) => setLoan(response.data));
+  const load = useCallback(() => {
+    if (!id) return;
+    setError("");
+    borrowApi.detail(Number(id)).then((response) => setLoan(response.data)).catch((requestError) => setError(errorMessage(requestError, "Không thể tải phiếu mượn.")));
   }, [id]);
+  useEffect(() => { load(); }, [load]);
 
+  if (error) return <PageError message={error} onRetry={load} />;
   if (!loan) return <PageLoader />;
 
   const memberContext =
@@ -53,9 +60,9 @@ export function BorrowDetail() {
             {memberContext ? ` · ${memberContext}` : ""}
           </p>
         </div>
-        <span className={`status ${loan.status}`}>
+        <StatusBadge status={loan.status}>
           {statusLabel(loan.status)}
-        </span>
+        </StatusBadge>
       </section>
       <section className="loan-detail-grid">
         <div className="panel loan-date-card">
@@ -97,7 +104,7 @@ export function BorrowDetail() {
                   </td>
                   <td className="mono">{item.inventory_code}</td>
                   <td>
-                    <span className={`status ${item.disposition}`}>
+                    <StatusBadge status={item.disposition}>
                       {item.disposition === "borrowed"
                         ? "Đang mượn"
                         : item.disposition === "returned"
@@ -105,7 +112,7 @@ export function BorrowDetail() {
                           : item.disposition === "lost"
                             ? "Mất"
                             : "Hỏng"}
-                    </span>
+                    </StatusBadge>
                   </td>
                   <td>{formatDate(item.returned_at)}</td>
                 </tr>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { userApi } from "../../../api/userApi";
 import { errorMessage } from "../../../utils/format";
+import { Toolbar } from "../../../components/common/Toolbar";
 export function ChangePassword() {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -20,7 +21,8 @@ export function ChangePassword() {
     }
   };
   return (
-    <section className="profile-grid">
+    <div className="section-stack profile-grid">
+      <Toolbar title="Đổi mật khẩu" description="Dùng mật khẩu riêng tư và không dùng lại ở nơi khác." />
       <form className="panel profile-form" onSubmit={submit}>
         <div className="profile-heading">
           <div>
@@ -52,6 +54,6 @@ export function ChangePassword() {
         </label>
         <button className="primary">Cập nhật mật khẩu</button>
       </form>
-    </section>
+    </div>
   );
 }

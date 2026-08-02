@@ -1,22 +1,32 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { operationsApi } from "../../../api/operationsApi";
 import { userApi } from "../../../api/userApi";
 import { FieldLabel } from "../../../components/common/FieldLabel";
 import { PageLoader } from "../../../components/common/PageLoader";
+import { PageError } from "../../../components/common/PageError";
 import { Selector } from "../../../components/common/Selector";
+import { Toolbar } from "../../../components/common/Toolbar";
 import { errorMessage, initials } from "../../../utils/format";
 import { normalizeClassName, validClassName, validPhone } from "../../../utils/validation";
 
 export function Profile() {
   const [profile, setProfile] = useState<any>();
   const [departments, setDepartments] = useState<string[]>([]);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    userApi.profile().then((response) => setProfile(response.data));
-    operationsApi.departments().then((response) => setDepartments(response.data.map((item) => item.name)));
+  const load = useCallback(() => {
+    setError("");
+    Promise.all([userApi.profile(), operationsApi.departments()])
+      .then(([profileResponse, departmentResponse]) => {
+        setProfile(profileResponse.data);
+        setDepartments(departmentResponse.data.map((item) => item.name));
+      })
+      .catch((requestError) => setError(errorMessage(requestError, "Không thể tải hồ sơ.")));
   }, []);
+  useEffect(() => { load(); }, [load]);
 
+  if (error) return <PageError message={error} onRetry={load} />;
   if (!profile) return <PageLoader />;
   const update = (key: string, value: string) => setProfile({ ...profile, [key]: value });
   const save = async (event: React.FormEvent) => {
@@ -33,7 +43,8 @@ export function Profile() {
     }
   };
 
-  return <section className="profile-grid">
+  return <div className="section-stack profile-grid">
+    <Toolbar title="Hồ sơ cá nhân" description="Cập nhật thông tin liên hệ và lớp hoặc tổ bộ môn." />
     <form className="panel profile-form" onSubmit={save}>
       <header className="profile-heading">
         <div className="avatar large">{initials(profile.full_name)}</div>
@@ -48,5 +59,5 @@ export function Profile() {
       </div>
       <div className="profile-actions"><button className="primary">Lưu thay đổi</button></div>
     </form>
-  </section>;
+  </div>;
 }

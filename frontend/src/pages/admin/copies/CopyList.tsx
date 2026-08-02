@@ -1,14 +1,18 @@
-import { Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { bookApi } from "../../../api/bookApi";
 import type { BookCopy } from "../../../types/book";
 import { Toolbar } from "../../../components/common/Toolbar";
 import { Pagination } from "../../../components/common/Pagination";
 import { EmptyState } from "../../../components/common/EmptyState";
+import { StatusBadge } from "../../../components/common/StatusBadge";
 import { Selector } from "../../../components/common/Selector";
 import { CopyCreateModal } from "./CopyCreateModal";
 import { CopyEditModal } from "./CopyEditModal";
+import { ConfirmDialog } from "../../../components/common/ConfirmDialog";
+import { RowActionMenu } from "../../../components/common/RowActionMenu";
+import { PageError } from "../../../components/common/PageError";
 import { errorMessage } from "../../../utils/format";
 const label = (status: string) =>
   ({
@@ -33,7 +37,9 @@ export function CopyList() {
   const [show, setShow] = useState(false);
   const [editing, setEditing] = useState<BookCopy | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
-  const load = () =>
+  const [deleting, setDeleting] = useState<number[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(() =>
     bookApi
       .copies({
         q: query,
@@ -46,23 +52,20 @@ export function CopyList() {
         setCopies(response.data.data);
         setPagination(response.data.pagination);
         setSelected([]);
+        setError(null);
       })
-      .catch((error) =>
-        toast.error(errorMessage(error, "Không thể tải quyển sách")),
-      );
+      .catch((loadError) =>
+        setError(errorMessage(loadError, "Không thể tải quyển sách")),
+      ), [page, query, shelf, status]);
   useEffect(() => {
     load();
-  }, [query, shelf, status, page]);
+  }, [load]);
   const filter = (setter: (value: string) => void, value: string) => {
     setter(value);
     setPage(1);
   };
   const remove = async (ids: number[]) => {
-    if (
-      !ids.length ||
-      !window.confirm(`Xóa vĩnh viễn ${ids.length} quyển sách?`)
-    )
-      return;
+    if (!ids.length) return;
     try {
       await bookApi.removeCopies(ids);
       toast.success(`Đã xóa ${ids.length} quyển sách`);
@@ -105,12 +108,15 @@ export function CopyList() {
           </>
         }
       />
+      {error && <PageError message={error} onRetry={() => void load()} />}
+      {!error && (
+      <>
       {selected.length > 0 && (
         <div className="selection-bar">
           <span>Đã chọn {selected.length} quyển sách</span>
           <button
             className="danger-button"
-            onClick={() => void remove(selected)}
+            onClick={() => setDeleting(selected)}
           >
             <Trash2 size={16} />
             Xóa đã chọn
@@ -157,23 +163,18 @@ export function CopyList() {
                 <td>{copy.title}</td>
                 <td>{copy.shelf || "-"}</td>
                 <td>
-                  <span className={`status ${copy.status}`}>
+                  <StatusBadge status={copy.status}>
                     {label(copy.status)}
-                  </span>
+                  </StatusBadge>
                 </td>
                 <td>
-                  <button
-                    className="row-action"
-                    onClick={() => setEditing(copy)}
-                  >
-                    Sửa
-                  </button>
-                  <button
-                    className="row-action danger-text"
-                    onClick={() => void remove([copy.id])}
-                  >
-                    Xóa
-                  </button>
+                  <RowActionMenu
+                    label={`Thao tác cho ${copy.inventory_code}`}
+                    actions={[
+                      { label: "Sửa", icon: Pencil, onSelect: () => setEditing(copy) },
+                      { label: "Xóa", icon: Trash2, tone: "danger", onSelect: () => setDeleting([copy.id]) },
+                    ]}
+                  />
                 </td>
               </tr>
             ))}
@@ -191,6 +192,8 @@ export function CopyList() {
           onChange={setPage}
         />
       </section>
+      </>
+      )}
       {show && (
         <CopyCreateModal
           onClose={() => setShow(false)}
@@ -210,6 +213,7 @@ export function CopyList() {
           }}
         />
       )}
+      {deleting && <ConfirmDialog title="Xóa quyển sách" description={`Xóa vĩnh viễn ${deleting.length} quyển sách?`} confirmLabel="Xóa quyển sách" onClose={() => setDeleting(null)} onConfirm={async () => { await remove(deleting); setDeleting(null); }} />}
     </>
   );
 }

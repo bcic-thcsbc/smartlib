@@ -1,10 +1,21 @@
 import { BookOpen } from "lucide-react";
-export function EmptyState({ title, text }: { title: string; text: string }) {
+import type { ReactNode } from "react";
+
+export function EmptyState({
+  title,
+  text,
+  action,
+}: {
+  title: string;
+  text: string;
+  action?: ReactNode;
+}) {
   return (
     <div className="empty">
-      <BookOpen size={22} />
+      <BookOpen size={22} aria-hidden="true" />
       <strong>{title}</strong>
       <span>{text}</span>
+      {action && <div className="empty-action">{action}</div>}
     </div>
   );
 }

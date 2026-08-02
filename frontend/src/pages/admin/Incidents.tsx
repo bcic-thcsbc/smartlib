@@ -1,10 +1,14 @@
-import { BadgeDollarSign, BookOpen, UserRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { BadgeDollarSign, BookOpen, Check, HandCoins, UserRound } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { operationsApi } from "../../api/operationsApi";
 import { EmptyState } from "../../components/common/EmptyState";
+import { StatusBadge } from "../../components/common/StatusBadge";
 import { Selector } from "../../components/common/Selector";
 import { Toolbar } from "../../components/common/Toolbar";
+import { ConfirmDialog } from "../../components/common/ConfirmDialog";
+import { PageError } from "../../components/common/PageError";
+import { RowActionMenu } from "../../components/common/RowActionMenu";
 import { errorMessage } from "../../utils/format";
 
 type Incident = {
@@ -29,15 +33,23 @@ const typeLabel = (type: string) =>
 export function Incidents() {
   const [items, setItems] = useState<Incident[]>([]);
   const [status, setStatus] = useState("open");
+  const [error, setError] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ item: Incident; waive: boolean } | null>(null);
 
-  const load = () =>
+  const load = useCallback(() =>
     operationsApi
       .incidents(status)
-      .then((response) => setItems(response.data.data));
+      .then((response) => {
+        setItems(response.data.data);
+        setError(null);
+      })
+      .catch((loadError) =>
+        setError(errorMessage(loadError, "Không thể tải sự cố sách")),
+      ), [status]);
 
   useEffect(() => {
     load();
-  }, [status]);
+  }, [load]);
 
   const resolve = async (item: Incident, waive = false) => {
     try {
@@ -70,6 +82,8 @@ export function Incidents() {
           </Selector>
         }
       />
+      {error && <PageError message={error} onRetry={() => void load()} />}
+      {!error && (
       <section className="panel table-panel incidents-table">
         <div className="panel-heading">
           <div>
@@ -131,26 +145,19 @@ export function Incidents() {
                   </div>
                 </td>
                 <td>
-                  <span className={`status ${item.status}`}>
+                  <StatusBadge status={item.status}>
                     {label(item.status)}
-                  </span>
+                  </StatusBadge>
                 </td>
                 <td>
                   {item.status === "open" && (
-                    <div className="incident-actions">
-                      <button
-                        className="row-action"
-                        onClick={() => void resolve(item)}
-                      >
-                        Giải quyết
-                      </button>
-                      <button
-                        className="row-action danger-text"
-                        onClick={() => void resolve(item, true)}
-                      >
-                        Miễn
-                      </button>
-                    </div>
+                    <RowActionMenu
+                      label={`Thao tác cho sự cố ${item.inventory_code}`}
+                      actions={[
+                        { label: "Giải quyết", icon: Check, onSelect: () => setPendingAction({ item, waive: false }) },
+                        { label: "Miễn bồi hoàn", icon: HandCoins, tone: "danger", onSelect: () => setPendingAction({ item, waive: true }) },
+                      ]}
+                    />
                   )}
                 </td>
               </tr>
@@ -164,6 +171,19 @@ export function Incidents() {
           />
         )}
       </section>
+      )}
+      {pendingAction && (
+        <ConfirmDialog
+          title={pendingAction.waive ? "Miễn bồi hoàn" : "Giải quyết sự cố"}
+          description={pendingAction.waive ? `Miễn bồi hoàn cho ${pendingAction.item.inventory_code}? Thao tác này sẽ được lưu vào hồ sơ sự cố.` : `Xác nhận đã giải quyết sự cố của ${pendingAction.item.inventory_code}.`}
+          confirmLabel={pendingAction.waive ? "Xác nhận miễn" : "Xác nhận giải quyết"}
+          onClose={() => setPendingAction(null)}
+          onConfirm={async () => {
+            await resolve(pendingAction.item, pendingAction.waive);
+            setPendingAction(null);
+          }}
+        />
+      )}
     </>
   );
 }

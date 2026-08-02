@@ -13,6 +13,7 @@ export function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
     if (user)
@@ -24,6 +25,7 @@ export function Login() {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setLoading(true);
+    setSubmitError("");
     try {
       const account = await login(username, password);
       toast.success("Đăng nhập thành công");
@@ -35,7 +37,9 @@ export function Login() {
         { replace: true },
       );
     } catch (error) {
-      toast.error(errorMessage(error, "Không thể đăng nhập"));
+      const message = errorMessage(error, "Không thể đăng nhập");
+      setSubmitError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -51,6 +55,7 @@ export function Login() {
         <p className="eyebrow">Thư viện số Trường THCS Bình Chuẩn</p>
         <h1>Đăng nhập</h1>
         <p className="muted">Dùng tài khoản thư viện số của bạn để tiếp tục.</p>
+        {submitError && <p className="field-error" role="alert">{submitError}</p>}
         {authLoading ? (
           <div className="auth-loading">Đang kiểm tra phiên đăng nhập...</div>
         ) : (

@@ -10,6 +10,10 @@ import {
   YAxis,
 } from "recharts";
 import { operationsApi } from "../../../api/operationsApi";
+import { Toolbar } from "../../../components/common/Toolbar";
+import { PageError } from "../../../components/common/PageError";
+import { PageLoader } from "../../../components/common/PageLoader";
+import { errorMessage } from "../../../utils/format";
 
 function VietnameseTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
@@ -30,12 +34,18 @@ export function DashboardReport() {
   const [report, setReport] = useState<any>();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const load = () =>
-    operationsApi
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const load = () => {
+    setLoading(true);
+    return operationsApi
       .report({ ...(from ? { from } : {}), ...(to ? { to } : {}) })
-      .then((response) => setReport(response.data));
+      .then((response) => { setReport(response.data); setError(""); })
+      .catch((requestError) => setError(errorMessage(requestError, "Không thể tải báo cáo.")))
+      .finally(() => setLoading(false));
+  };
   useEffect(() => {
-    load();
+    operationsApi.report().then((response) => setReport(response.data)).catch((requestError) => setError(errorMessage(requestError, "Không thể tải báo cáo."))).finally(() => setLoading(false));
   }, []);
   const exportReport = async () => {
     const response = await operationsApi.exportSpreadsheet();
@@ -46,15 +56,11 @@ export function DashboardReport() {
   };
   return (
     <div className="section-stack">
-      <div className="page-header">
-        <div>
-          <p className="eyebrow">Phân tích thư viện</p>
-          <h2>Báo cáo lưu thông</h2>
-          <p className="muted">
-            Theo dõi nhu cầu mượn, quá hạn, mất và hỏng theo thời gian.
-          </p>
-        </div>
-        <div className="page-actions">
+      <Toolbar
+        eyebrow="Phân tích thư viện"
+        title="Báo cáo lưu thông"
+        description="Theo dõi nhu cầu mượn, quá hạn, mất và hỏng theo thời gian."
+        actions={<>
           <input
             type="date"
             value={from}
@@ -72,9 +78,9 @@ export function DashboardReport() {
             <Download size={17} />
             Xuất Excel
           </button>
-        </div>
-      </div>
-      {report && (
+        </>}
+      />
+      {loading && !report ? <PageLoader /> : error && !report ? <PageError message={error} onRetry={load} /> : report && (
         <>
           <div className="status-grid">
             <div className="metric">
@@ -106,8 +112,8 @@ export function DashboardReport() {
                   <Tooltip content={<VietnameseTooltip />} />
                   <Bar
                     dataKey="total_loans"
-                    fill="#2E77DF"
-                    radius={[6, 6, 0, 0]}
+                    fill="var(--sl-brand)"
+                    radius={[8, 8, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>

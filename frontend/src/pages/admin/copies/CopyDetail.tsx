@@ -1,19 +1,26 @@
 import { ArrowLeft, History, QrCode } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { bookApi } from "../../../api/bookApi";
 import type { CopyDetail as Copy } from "../../../types/book";
 import { PageLoader } from "../../../components/common/PageLoader";
 import { EmptyState } from "../../../components/common/EmptyState";
+import { StatusBadge } from "../../../components/common/StatusBadge";
+import { PageError } from "../../../components/common/PageError";
 import { formatDate } from "../../../utils/format";
+import { errorMessage } from "../../../utils/format";
 
 export function AdminCopyDetail() {
   const { id } = useParams();
   const [copy, setCopy] = useState<Copy>();
-  useEffect(() => {
-    if (id)
-      bookApi.copyDetail(Number(id)).then((response) => setCopy(response.data));
+  const [error, setError] = useState("");
+  const load = useCallback(() => {
+    if (!id) return;
+    setError("");
+    bookApi.copyDetail(Number(id)).then((response) => setCopy(response.data)).catch((requestError) => setError(errorMessage(requestError, "Không thể tải quyển sách.")));
   }, [id]);
+  useEffect(() => { load(); }, [load]);
+  if (error) return <PageError message={error} onRetry={load} />;
   if (!copy) return <PageLoader />;
   return (
     <div className="section-stack">
@@ -79,9 +86,9 @@ export function AdminCopyDetail() {
                   <td>{formatDate(row.borrow_date)}</td>
                   <td>{formatDate(row.returned_at)}</td>
                   <td>
-                    <span className={`status ${row.disposition}`}>
+                    <StatusBadge status={row.disposition}>
                       {row.disposition}
-                    </span>
+                    </StatusBadge>
                   </td>
                 </tr>
               ))}

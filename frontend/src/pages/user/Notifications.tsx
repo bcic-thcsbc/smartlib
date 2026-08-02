@@ -1,10 +1,11 @@
 import { CheckCheck, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { operationsApi, type Notification } from "../../api/operationsApi";
 import { EmptyState } from "../../components/common/EmptyState";
 import { Modal } from "../../components/common/Modal";
+import { PageError } from "../../components/common/PageError";
 import { Toolbar } from "../../components/common/Toolbar";
-import { formatDateTime, formatEmbeddedDates } from "../../utils/format";
+import { errorMessage, formatDateTime, formatEmbeddedDates } from "../../utils/format";
 
 const notificationEvent = "smartlib:notifications-changed";
 
@@ -15,15 +16,17 @@ function notifyHeader() {
 export function Notifications() {
   const [items, setItems] = useState<Notification[]>([]);
   const [selected, setSelected] = useState<Notification>();
+  const [error, setError] = useState("");
 
-  const load = () =>
+  const load = useCallback(() =>
     operationsApi
       .notifications()
-      .then((response) => setItems(response.data.data));
+      .then((response) => { setItems(response.data.data); setError(""); })
+      .catch((requestError) => setError(errorMessage(requestError, "Không thể tải thông báo."))), []);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const markRead = async (item: Notification) => {
     if (item.read_at) return;
@@ -65,7 +68,7 @@ export function Notifications() {
   return (
     <>
       <Toolbar title="Thông báo" count={items.length} />
-      <section className="panel notifications-panel">
+      {error ? <PageError message={error} onRetry={load} /> : <section className="panel notifications-panel">
         <div className="panel-heading">
           <div>
             <p className="eyebrow">Hộp thư</p>
@@ -109,7 +112,7 @@ export function Notifications() {
             text="Các cập nhật về yêu cầu và phiếu mượn sẽ hiển thị tại đây."
           />
         )}
-      </section>
+      </section>}
       {selected && (
         <Modal title="Thông báo" onClose={() => setSelected(undefined)}>
           <article className="notification-detail">

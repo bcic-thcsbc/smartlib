@@ -1,10 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { userApi } from "../../../api/userApi";
 import type { User } from "../../../types/user";
 import { Toolbar } from "../../../components/common/Toolbar";
 import { Pagination } from "../../../components/common/Pagination";
 import { Selector } from "../../../components/common/Selector";
+import { ConfirmDialog } from "../../../components/common/ConfirmDialog";
+import { RowActionMenu } from "../../../components/common/RowActionMenu";
+import { PageError } from "../../../components/common/PageError";
 import { UserFormModal } from "./UserFormModal";
 import { errorMessage, initials } from "../../../utils/format";
 export function UserList() {
@@ -19,19 +23,22 @@ export function UserList() {
     limit: 25,
   });
   const [editing, setEditing] = useState<User | null>(null);
-  const load = () =>
+  const [deleting, setDeleting] = useState<User | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(() =>
     userApi
       .list({ q: query, page, limit: 25, ...(type ? { user_type: type } : {}) })
       .then((response) => {
         setUsers(response.data.data);
         setPagination(response.data.pagination);
+        setError(null);
       })
-      .catch((error) =>
-        toast.error(errorMessage(error, "Không thể tải thành viên")),
-      );
+      .catch((loadError) =>
+        setError(errorMessage(loadError, "Không thể tải thành viên")),
+      ), [page, query, type]);
   useEffect(() => {
     load();
-  }, [query, type, page]);
+  }, [load]);
   const save = async (form: any) => {
     if (!editing) return;
     try {
@@ -44,10 +51,6 @@ export function UserList() {
     }
   };
   const remove = async (user: User) => {
-    if (
-      !window.confirm(`Xóa vĩnh viễn ${user.full_name} cùng dữ liệu liên quan?`)
-    )
-      return;
     try {
       await userApi.remove(user.id);
       toast.success("Đã xóa thành viên");
@@ -67,6 +70,9 @@ export function UserList() {
           setPage(1);
         }}
       />
+      {error && <PageError message={error} onRetry={() => void load()} />}
+      {!error && (
+      <>
       <div className="list-filters">
         <Selector
           value={type}
@@ -113,18 +119,13 @@ export function UserList() {
                 <td>{user.class_name || user.department || "-"}</td>
                 <td>{user.email || user.phone || "-"}</td>
                 <td>
-                  <button
-                    className="row-action"
-                    onClick={() => setEditing(user)}
-                  >
-                    Sửa
-                  </button>
-                  <button
-                    className="row-action danger-text"
-                    onClick={() => void remove(user)}
-                  >
-                    Xóa
-                  </button>
+                  <RowActionMenu
+                    label={`Thao tác cho ${user.full_name}`}
+                    actions={[
+                      { label: "Sửa", icon: Pencil, onSelect: () => setEditing(user) },
+                      { label: "Xóa", icon: Trash2, tone: "danger", onSelect: () => setDeleting(user) },
+                    ]}
+                  />
                 </td>
               </tr>
             ))}
@@ -136,6 +137,8 @@ export function UserList() {
           onChange={setPage}
         />
       </section>
+      </>
+      )}
       {editing && (
         <UserFormModal
           initial={editing}
@@ -143,6 +146,7 @@ export function UserList() {
           onSave={save}
         />
       )}
+      {deleting && <ConfirmDialog title="Xóa thành viên" description={`Xóa vĩnh viễn ${deleting.full_name} cùng dữ liệu liên quan?`} confirmLabel="Xóa thành viên" onClose={() => setDeleting(null)} onConfirm={async () => { await remove(deleting); setDeleting(null); }} />}
     </>
   );
 }

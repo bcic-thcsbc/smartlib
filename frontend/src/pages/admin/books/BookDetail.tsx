@@ -1,22 +1,27 @@
 import { ArrowLeft, BookOpen, ClipboardList, ExternalLink } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { bookApi } from "../../../api/bookApi";
 import type { AdminBookDetail } from "../../../types/book";
 import { PageLoader } from "../../../components/common/PageLoader";
 import { EmptyState } from "../../../components/common/EmptyState";
+import { StatusBadge } from "../../../components/common/StatusBadge";
+import { PageError } from "../../../components/common/PageError";
 import { formatDate } from "../../../utils/format";
+import { errorMessage } from "../../../utils/format";
 
 export function AdminBookDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [book, setBook] = useState<AdminBookDetail>();
-  useEffect(() => {
-    if (id)
-      bookApi
-        .adminDetail(Number(id))
-        .then((response) => setBook(response.data));
+  const [error, setError] = useState("");
+  const load = useCallback(() => {
+    if (!id) return;
+    setError("");
+    bookApi.adminDetail(Number(id)).then((response) => setBook(response.data)).catch((requestError) => setError(errorMessage(requestError, "Không thể tải tựa sách.")));
   }, [id]);
+  useEffect(() => { load(); }, [load]);
+  if (error) return <PageError message={error} onRetry={load} />;
   if (!book) return <PageLoader />;
   const cover = book.cover_image?.startsWith("/")
     ? `${import.meta.env.VITE_API_ORIGIN || "http://localhost:4000"}${book.cover_image}`
@@ -102,9 +107,9 @@ export function AdminBookDetail() {
                   <td className="mono strong">{copy.inventory_code}</td>
                   <td>{copy.shelf || "-"}</td>
                   <td>
-                    <span className={`status ${copy.status}`}>
+                    <StatusBadge status={copy.status}>
                       {copy.status}
-                    </span>
+                    </StatusBadge>
                   </td>
                   <td>{copy.holder_name || "-"}</td>
                   <td>
@@ -159,9 +164,9 @@ export function AdminBookDetail() {
                   <td>{formatDate(row.borrow_date)}</td>
                   <td>{formatDate(row.due_date)}</td>
                   <td>
-                    <span className={`status ${row.disposition}`}>
+                    <StatusBadge status={row.disposition}>
                       {row.disposition}
-                    </span>
+                    </StatusBadge>
                   </td>
                 </tr>
               ))}

@@ -4,8 +4,18 @@ export const borrowApi = {
   list: (params?: Record<string, string | number>) =>
     api.get<Page<Loan>>("/borrow", { params }),
   detail: (id: number) => api.get<Loan>(`/borrow/${id}`),
-  create: (data: { user_id?: number; copy_ids: number[]; due_date: string; visitor?: { full_name: string; gender: "male" | "female"; class_name: string; email: string; phone: string } }) =>
-    api.post("/borrow", data),
+  create: (data: {
+    user_id?: number;
+    copy_ids: number[];
+    due_date: string;
+    visitor?: {
+      full_name: string;
+      gender: "male" | "female";
+      class_name: string;
+      email: string;
+      phone: string;
+    };
+  }) => api.post("/borrow", data),
   returnLoan: (id: number) => api.post(`/borrow/${id}/return`),
   returnItem: (loanId: number, itemId: number, data?: Record<string, string>) =>
     api.post(`/borrow/${loanId}/items/${itemId}/return`, data),

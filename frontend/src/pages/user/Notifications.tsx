@@ -5,7 +5,11 @@ import { EmptyState } from "../../components/common/EmptyState";
 import { Modal } from "../../components/common/Modal";
 import { PageError } from "../../components/common/PageError";
 import { Toolbar } from "../../components/common/Toolbar";
-import { errorMessage, formatDateTime, formatEmbeddedDates } from "../../utils/format";
+import {
+  errorMessage,
+  formatDateTime,
+  formatEmbeddedDates,
+} from "../../utils/format";
 
 const notificationEvent = "smartlib:notifications-changed";
 
@@ -18,11 +22,19 @@ export function Notifications() {
   const [selected, setSelected] = useState<Notification>();
   const [error, setError] = useState("");
 
-  const load = useCallback(() =>
-    operationsApi
-      .notifications()
-      .then((response) => { setItems(response.data.data); setError(""); })
-      .catch((requestError) => setError(errorMessage(requestError, "Không thể tải thông báo."))), []);
+  const load = useCallback(
+    () =>
+      operationsApi
+        .notifications()
+        .then((response) => {
+          setItems(response.data.data);
+          setError("");
+        })
+        .catch((requestError) =>
+          setError(errorMessage(requestError, "Không thể tải thông báo.")),
+        ),
+    [],
+  );
 
   useEffect(() => {
     load();
@@ -68,51 +80,55 @@ export function Notifications() {
   return (
     <>
       <Toolbar title="Thông báo" count={items.length} />
-      {error ? <PageError message={error} onRetry={load} /> : <section className="panel notifications-panel">
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow">Hộp thư</p>
-            <h3>
-              {unread
-                ? `${unread} thông báo chưa đọc`
-                : "Bạn đã đọc tất cả thông báo"}
-            </h3>
+      {error ? (
+        <PageError message={error} onRetry={load} />
+      ) : (
+        <section className="panel notifications-panel">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Hộp thư</p>
+              <h3>
+                {unread
+                  ? `${unread} thông báo chưa đọc`
+                  : "Bạn đã đọc tất cả thông báo"}
+              </h3>
+            </div>
+            {unread > 0 && (
+              <button
+                className="secondary"
+                type="button"
+                onClick={() => void markAllRead()}
+              >
+                <CheckCheck size={16} />
+                Đánh dấu đã đọc
+              </button>
+            )}
           </div>
-          {unread > 0 && (
-            <button
-              className="secondary"
-              type="button"
-              onClick={() => void markAllRead()}
-            >
-              <CheckCheck size={16} />
-              Đánh dấu đã đọc
-            </button>
+          <div className="activity-list">
+            {items.map((item) => (
+              <button
+                className={`activity-row notification-row ${item.read_at ? "" : "unread"}`}
+                key={item.id}
+                type="button"
+                onClick={() => void open(item)}
+              >
+                <div className="activity-icon">•</div>
+                <div>
+                  <strong>{item.title}</strong>
+                  <span>{formatEmbeddedDates(item.body)}</span>
+                </div>
+                <time>{formatDateTime(item.created_at)}</time>
+              </button>
+            ))}
+          </div>
+          {!items.length && (
+            <EmptyState
+              title="Chưa có thông báo"
+              text="Các cập nhật về yêu cầu và phiếu mượn sẽ hiển thị tại đây."
+            />
           )}
-        </div>
-        <div className="activity-list">
-          {items.map((item) => (
-            <button
-              className={`activity-row notification-row ${item.read_at ? "" : "unread"}`}
-              key={item.id}
-              type="button"
-              onClick={() => void open(item)}
-            >
-              <div className="activity-icon">•</div>
-              <div>
-                <strong>{item.title}</strong>
-                <span>{formatEmbeddedDates(item.body)}</span>
-              </div>
-              <time>{formatDateTime(item.created_at)}</time>
-            </button>
-          ))}
-        </div>
-        {!items.length && (
-          <EmptyState
-            title="Chưa có thông báo"
-            text="Các cập nhật về yêu cầu và phiếu mượn sẽ hiển thị tại đây."
-          />
-        )}
-      </section>}
+        </section>
+      )}
       {selected && (
         <Modal title="Thông báo" onClose={() => setSelected(undefined)}>
           <article className="notification-detail">

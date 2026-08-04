@@ -151,7 +151,10 @@ export function Selector({
         onClick={(event) => {
           setIndex(0);
           setOpen(true);
-          event.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" });
+          event.currentTarget.scrollIntoView({
+            block: "center",
+            behavior: "smooth",
+          });
         }}
         onKeyDown={handleKeyDown}
         onChange={(event) => {
@@ -177,8 +180,9 @@ export function Selector({
                 visibleOptions.map((option, optionIndex) => (
                   <button
                     key={option.value || "__empty"}
-                    className={`${optionIndex === index ? "active" : ""} ${option.value === String(value) ? "selected" : ""
-                      }`}
+                    className={`${optionIndex === index ? "active" : ""} ${
+                      option.value === String(value) ? "selected" : ""
+                    }`}
                     type="button"
                     role="option"
                     aria-selected={option.value === String(value)}
@@ -190,7 +194,9 @@ export function Selector({
                   </button>
                 ))
               ) : (
-                <p className="selector-empty">Không tìm thấy lựa chọn phù hợp.</p>
+                <p className="selector-empty">
+                  Không tìm thấy lựa chọn phù hợp.
+                </p>
               )}
             </div>
           </div>

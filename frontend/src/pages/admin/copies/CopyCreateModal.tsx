@@ -76,9 +76,6 @@ export function CopyCreateModal({ onClose, onSaved }: CopyCreateModalProps) {
           />
         </label>
       </div>
-      <p className="muted">
-        Mã quyển được rút gọn từ tên tựa sách và đánh số liên tục, ví dụ TH9-1.
-      </p>
       <div className="modal-actions">
         <button className="secondary" type="button" onClick={onClose}>
           Hủy

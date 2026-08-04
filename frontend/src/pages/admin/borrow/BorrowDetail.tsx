@@ -29,9 +29,16 @@ export function BorrowDetail() {
   const load = useCallback(() => {
     if (!id) return;
     setError("");
-    borrowApi.detail(Number(id)).then((response) => setLoan(response.data)).catch((requestError) => setError(errorMessage(requestError, "Không thể tải phiếu mượn.")));
+    borrowApi
+      .detail(Number(id))
+      .then((response) => setLoan(response.data))
+      .catch((requestError) =>
+        setError(errorMessage(requestError, "Không thể tải phiếu mượn.")),
+      );
   }, [id]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (error) return <PageError message={error} onRetry={load} />;
   if (!loan) return <PageLoader />;

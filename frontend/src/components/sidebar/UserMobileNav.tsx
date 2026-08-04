@@ -1,4 +1,10 @@
-import { BookOpen, CircleUserRound, ClipboardList, LayoutDashboard, ListChecks } from "lucide-react";
+import {
+  BookOpen,
+  CircleUserRound,
+  ClipboardList,
+  LayoutDashboard,
+  ListChecks,
+} from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const links = [
@@ -16,7 +22,9 @@ export function UserMobileNav() {
         <NavLink
           key={to}
           to={to}
-          className={({ isActive }) => isActive ? "mobile-nav-link active" : "mobile-nav-link"}
+          className={({ isActive }) =>
+            isActive ? "mobile-nav-link active" : "mobile-nav-link"
+          }
         >
           <Icon size={19} aria-hidden="true" />
           <span>{label}</span>

@@ -1,5 +1,6 @@
 import { Plus, Search } from "lucide-react";
 import type { ReactNode } from "react";
+import { FloatingInput } from "./FloatingInput";
 
 export function Toolbar({
   title,
@@ -36,16 +37,14 @@ export function Toolbar({
       </div>
       <div className="toolbar-actions">
         {onSearch && (
-          <label className="search">
-            <Search size={18} aria-hidden="true" />
-            <input
-              placeholder="Tìm theo tên, tiêu đề hoặc mã sách"
-              spellCheck={false}
-              value={search || ""}
-              onChange={(event) => onSearch(event.target.value)}
-              aria-label="Tìm kiếm"
-            />
-          </label>
+          <FloatingInput
+            label="Tìm tựa sách"
+            icon={<Search size={18} aria-hidden="true" />}
+            wrapperClassName="search"
+            value={search || ""}
+            onChange={(event) => onSearch(event.target.value)}
+            aria-label="Tìm kiếm"
+          />
         )}
         {filters && <div className="toolbar-filters">{filters}</div>}
         {actions}

@@ -33,7 +33,7 @@ export function Login() {
         ?.pathname;
       navigate(
         from ||
-        (account.role === "admin" ? "/admin/dashboard" : "/user/dashboard"),
+          (account.role === "admin" ? "/admin/dashboard" : "/user/dashboard"),
         { replace: true },
       );
     } catch (error) {
@@ -55,7 +55,11 @@ export function Login() {
         <p className="eyebrow">Thư viện số Trường THCS Bình Chuẩn</p>
         <h1>Đăng nhập</h1>
         <p className="muted">Dùng tài khoản thư viện số của bạn để tiếp tục.</p>
-        {submitError && <p className="field-error" role="alert">{submitError}</p>}
+        {submitError && (
+          <p className="field-error" role="alert">
+            {submitError}
+          </p>
+        )}
         {authLoading ? (
           <div className="auth-loading">Đang kiểm tra phiên đăng nhập...</div>
         ) : (

@@ -63,77 +63,92 @@ export function BorrowRequests() {
       <Toolbar title="Yêu cầu mượn" count={items.length} />
       {error && <PageError message={error} onRetry={() => void load()} />}
       {!error && (
-      <section className="panel table-panel">
-        <table>
-          <thead>
-            <tr>
-              <th>Người yêu cầu</th>
-              <th>Tựa sách</th>
-              <th>Lịch mượn</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td>{item.full_name}</td>
-                <td>
-                  <strong>{item.title}</strong>
-                  <small className="request-book-meta">
-                    {item.author ? `Tác giả: ${item.author}` : "Tác giả chưa cập nhật"}
-                    {item.publisher ? ` · NXB ${item.publisher}` : ""}
-                    {item.category ? ` · ${item.category}` : ""}
-                  </small>
-                </td>
-                <td>
-                  {formatDate(
-                    (item as any).desired_start_date || item.requested_at,
-                  )}{" "}
-                  → {formatDate((item as any).planned_due_date)}
-                </td>
-                <td>
-                  <StatusBadge status={item.status}>
-                    {statusLabel(item.status)}
-                  </StatusBadge>
-                </td>
-                <td>
-                  {item.status === "pending" && (
-                    <RowActionMenu
-                      label={`Thao tác cho yêu cầu ${item.title}`}
-                      actions={[
-                        { label: "Duyệt tự động", icon: Check, onSelect: () => void act(item.id, "approve") },
-                        { label: "Từ chối", icon: X, tone: "danger", onSelect: () => void act(item.id, "reject") },
-                      ]}
-                    />
-                  )}
-                  {item.status === "approved" &&
-                    item.reservation_status === "ready_for_pickup" && (
+        <section className="panel table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>Người yêu cầu</th>
+                <th>Tựa sách</th>
+                <th>Lịch mượn</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.full_name}</td>
+                  <td>
+                    <strong>{item.title}</strong>
+                    <small className="request-book-meta">
+                      {item.author
+                        ? `Tác giả: ${item.author}`
+                        : "Tác giả chưa cập nhật"}
+                      {item.publisher ? ` · NXB ${item.publisher}` : ""}
+                      {item.category ? ` · ${item.category}` : ""}
+                    </small>
+                  </td>
+                  <td>
+                    {formatDate(
+                      (item as any).desired_start_date || item.requested_at,
+                    )}{" "}
+                    → {formatDate((item as any).planned_due_date)}
+                  </td>
+                  <td>
+                    <StatusBadge status={item.status}>
+                      {statusLabel(item.status)}
+                    </StatusBadge>
+                  </td>
+                  <td>
+                    {item.status === "pending" && (
                       <RowActionMenu
                         label={`Thao tác cho yêu cầu ${item.title}`}
                         actions={[
-                          { label: "Xác nhận giao", icon: PackageCheck, onSelect: () => void act(item.id, "checkout") },
+                          {
+                            label: "Duyệt tự động",
+                            icon: Check,
+                            onSelect: () => void act(item.id, "approve"),
+                          },
+                          {
+                            label: "Từ chối",
+                            icon: X,
+                            tone: "danger",
+                            onSelect: () => void act(item.id, "reject"),
+                          },
                         ]}
                       />
                     )}
-                  {item.status === "approved" &&
-                    item.reservation_status !== "ready_for_pickup" && (
-                      <span className="muted">
-                        Chờ ngày nhận {formatDate(item.desired_start_date)}
-                      </span>
-                    )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!items.length && (
-          <EmptyState
-            title="Không có yêu cầu"
-            text="Yêu cầu mới của độc giả sẽ hiển thị tại đây."
-          />
-        )}
-      </section>
+                    {item.status === "approved" &&
+                      item.reservation_status === "ready_for_pickup" && (
+                        <RowActionMenu
+                          label={`Thao tác cho yêu cầu ${item.title}`}
+                          actions={[
+                            {
+                              label: "Xác nhận giao",
+                              icon: PackageCheck,
+                              onSelect: () => void act(item.id, "checkout"),
+                            },
+                          ]}
+                        />
+                      )}
+                    {item.status === "approved" &&
+                      item.reservation_status !== "ready_for_pickup" && (
+                        <span className="muted">
+                          Chờ ngày nhận {formatDate(item.desired_start_date)}
+                        </span>
+                      )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!items.length && (
+            <EmptyState
+              title="Không có yêu cầu"
+              text="Yêu cầu mới của độc giả sẽ hiển thị tại đây."
+            />
+          )}
+        </section>
       )}
     </>
   );

@@ -17,9 +17,16 @@ export function AdminCopyDetail() {
   const load = useCallback(() => {
     if (!id) return;
     setError("");
-    bookApi.copyDetail(Number(id)).then((response) => setCopy(response.data)).catch((requestError) => setError(errorMessage(requestError, "Không thể tải quyển sách.")));
+    bookApi
+      .copyDetail(Number(id))
+      .then((response) => setCopy(response.data))
+      .catch((requestError) =>
+        setError(errorMessage(requestError, "Không thể tải quyển sách.")),
+      );
   }, [id]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
   if (error) return <PageError message={error} onRetry={load} />;
   if (!copy) return <PageLoader />;
   return (

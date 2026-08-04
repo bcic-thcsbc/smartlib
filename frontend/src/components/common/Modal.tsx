@@ -39,11 +39,28 @@ export function Modal({ title, onClose, children }: ModalProps) {
   }, [onClose]);
 
   return (
-    <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div ref={dialogRef} className="modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+    <div
+      className="modal-backdrop"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <div
+        ref={dialogRef}
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
         <div className="modal-heading">
           <h2 id={titleId}>{title}</h2>
-          <button ref={closeRef} className="icon-button" type="button" onClick={onClose} aria-label="Đóng"><X size={18} aria-hidden="true" /></button>
+          <button
+            ref={closeRef}
+            className="icon-button"
+            type="button"
+            onClick={onClose}
+            aria-label="Đóng"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
         </div>
         {children}
       </div>

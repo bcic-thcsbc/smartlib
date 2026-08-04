@@ -6,6 +6,7 @@ import type { User } from "../../../types/user";
 import { Toolbar } from "../../../components/common/Toolbar";
 import { Pagination } from "../../../components/common/Pagination";
 import { Selector } from "../../../components/common/Selector";
+import { FieldLabel } from "../../../components/common/FieldLabel";
 import { ConfirmDialog } from "../../../components/common/ConfirmDialog";
 import { RowActionMenu } from "../../../components/common/RowActionMenu";
 import { PageError } from "../../../components/common/PageError";
@@ -25,17 +26,25 @@ export function UserList() {
   const [editing, setEditing] = useState<User | null>(null);
   const [deleting, setDeleting] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const load = useCallback(() =>
-    userApi
-      .list({ q: query, page, limit: 25, ...(type ? { user_type: type } : {}) })
-      .then((response) => {
-        setUsers(response.data.data);
-        setPagination(response.data.pagination);
-        setError(null);
-      })
-      .catch((loadError) =>
-        setError(errorMessage(loadError, "Không thể tải thành viên")),
-      ), [page, query, type]);
+  const load = useCallback(
+    () =>
+      userApi
+        .list({
+          q: query,
+          page,
+          limit: 25,
+          ...(type ? { user_type: type } : {}),
+        })
+        .then((response) => {
+          setUsers(response.data.data);
+          setPagination(response.data.pagination);
+          setError(null);
+        })
+        .catch((loadError) =>
+          setError(errorMessage(loadError, "Không thể tải thành viên")),
+        ),
+    [page, query, type],
+  );
   useEffect(() => {
     load();
   }, [load]);
@@ -72,72 +81,84 @@ export function UserList() {
       />
       {error && <PageError message={error} onRetry={() => void load()} />}
       {!error && (
-      <>
-      <div className="list-filters">
-        <Selector
-          value={type}
-          onChange={(event) => {
-            setType(event.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">Tất cả thành viên</option>
-          <option value="student">Học sinh</option>
-          <option value="teacher">Giáo viên</option>
-        </Selector>
-      </div>
-      <section className="panel table-panel">
-        <table>
-          <thead>
-            <tr>
-              <th>Thành viên</th>
-              <th>Vai trò</th>
-              <th>Lớp / tổ bộ môn</th>
-              <th>Liên hệ</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.id}>
-                <td>
-                  <div className="book-cell">
-                    <div className="avatar small">
-                      {initials(user.full_name)}
-                    </div>
-                    <div>
-                      <strong>{user.full_name}</strong>
-                      <span>@{user.username}</span>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span className="tag">
-                    {user.role === "admin" ? "Thủ thư" : "Độc giả"}
-                  </span>
-                </td>
-                <td>{user.class_name || user.department || "-"}</td>
-                <td>{user.email || user.phone || "-"}</td>
-                <td>
-                  <RowActionMenu
-                    label={`Thao tác cho ${user.full_name}`}
-                    actions={[
-                      { label: "Sửa", icon: Pencil, onSelect: () => setEditing(user) },
-                      { label: "Xóa", icon: Trash2, tone: "danger", onSelect: () => setDeleting(user) },
-                    ]}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <Pagination
-          page={pagination.page}
-          pages={pagination.pages}
-          onChange={setPage}
-        />
-      </section>
-      </>
+        <>
+          <div className="list-filters">
+            <label>
+              <FieldLabel>Loại thành viên</FieldLabel>
+              <Selector
+                value={type}
+                onChange={(event) => {
+                  setType(event.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Tất cả thành viên</option>
+                <option value="student">Học sinh</option>
+                <option value="teacher">Giáo viên</option>
+              </Selector>
+            </label>
+          </div>
+          <section className="panel table-panel">
+            <table>
+              <thead>
+                <tr>
+                  <th>Thành viên</th>
+                  <th>Vai trò</th>
+                  <th>Lớp / tổ bộ môn</th>
+                  <th>Liên hệ</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.id}>
+                    <td>
+                      <div className="book-cell">
+                        <div className="avatar small">
+                          {initials(user.full_name)}
+                        </div>
+                        <div>
+                          <strong>{user.full_name}</strong>
+                          <span>@{user.username}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="tag">
+                        {user.role === "admin" ? "Thủ thư" : "Độc giả"}
+                      </span>
+                    </td>
+                    <td>{user.class_name || user.department || "-"}</td>
+                    <td>{user.email || user.phone || "-"}</td>
+                    <td>
+                      <RowActionMenu
+                        label={`Thao tác cho ${user.full_name}`}
+                        actions={[
+                          {
+                            label: "Sửa",
+                            icon: Pencil,
+                            onSelect: () => setEditing(user),
+                          },
+                          {
+                            label: "Xóa",
+                            icon: Trash2,
+                            tone: "danger",
+                            onSelect: () => setDeleting(user),
+                          },
+                        ]}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Pagination
+              page={pagination.page}
+              pages={pagination.pages}
+              onChange={setPage}
+            />
+          </section>
+        </>
       )}
       {editing && (
         <UserFormModal
@@ -146,7 +167,18 @@ export function UserList() {
           onSave={save}
         />
       )}
-      {deleting && <ConfirmDialog title="Xóa thành viên" description={`Xóa vĩnh viễn ${deleting.full_name} cùng dữ liệu liên quan?`} confirmLabel="Xóa thành viên" onClose={() => setDeleting(null)} onConfirm={async () => { await remove(deleting); setDeleting(null); }} />}
+      {deleting && (
+        <ConfirmDialog
+          title="Xóa thành viên"
+          description={`Xóa vĩnh viễn ${deleting.full_name} cùng dữ liệu liên quan?`}
+          confirmLabel="Xóa thành viên"
+          onClose={() => setDeleting(null)}
+          onConfirm={async () => {
+            await remove(deleting);
+            setDeleting(null);
+          }}
+        />
+      )}
     </>
   );
 }

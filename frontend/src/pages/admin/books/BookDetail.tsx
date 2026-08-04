@@ -18,9 +18,16 @@ export function AdminBookDetail() {
   const load = useCallback(() => {
     if (!id) return;
     setError("");
-    bookApi.adminDetail(Number(id)).then((response) => setBook(response.data)).catch((requestError) => setError(errorMessage(requestError, "Không thể tải tựa sách.")));
+    bookApi
+      .adminDetail(Number(id))
+      .then((response) => setBook(response.data))
+      .catch((requestError) =>
+        setError(errorMessage(requestError, "Không thể tải tựa sách.")),
+      );
   }, [id]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
   if (error) return <PageError message={error} onRetry={load} />;
   if (!book) return <PageLoader />;
   const cover = book.cover_image?.startsWith("/")

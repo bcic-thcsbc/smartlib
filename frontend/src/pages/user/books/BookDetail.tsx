@@ -40,9 +40,16 @@ export function BookDetail() {
   const load = useCallback(() => {
     if (!id) return;
     setError("");
-    bookApi.detail(Number(id)).then((response) => setBook(response.data)).catch((requestError) => setError(errorMessage(requestError, "Không thể tải tựa sách.")));
+    bookApi
+      .detail(Number(id))
+      .then((response) => setBook(response.data))
+      .catch((requestError) =>
+        setError(errorMessage(requestError, "Không thể tải tựa sách.")),
+      );
   }, [id]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   useEffect(() => {
     if (
@@ -102,15 +109,32 @@ export function BookDetail() {
             {book.publisher ? ` · ${book.publisher}` : ""}
           </p>
           <div className="detail-meta-grid">
-            <div><span>Tổng số</span><strong>{book.total_quantity} cuốn</strong></div>
-            <div><span>Đang mượn</span><strong>{book.borrowed_quantity || 0} cuốn</strong></div>
-            <div><span>Khả dụng</span><strong>{book.available_quantity} cuốn</strong></div>
+            <div>
+              <span>Tổng số</span>
+              <strong>{book.total_quantity} cuốn</strong>
+            </div>
+            <div>
+              <span>Đang mượn</span>
+              <strong>{book.borrowed_quantity || 0} cuốn</strong>
+            </div>
+            <div>
+              <span>Khả dụng</span>
+              <strong>{book.available_quantity} cuốn</strong>
+            </div>
           </div>
           <div className="availability-panel">
             <BookOpen size={20} aria-hidden="true" />
             <div>
-              <strong>{book.available_quantity ? `${book.available_quantity} quyển đang có sẵn` : "Hiện chưa có quyển sẵn sàng"}</strong>
-              <span>{book.available_quantity ? "Chọn lịch mượn để kiểm tra bản phù hợp." : "Bạn vẫn có thể kiểm tra lịch mượn gần nhất."}</span>
+              <strong>
+                {book.available_quantity
+                  ? `${book.available_quantity} quyển đang có sẵn`
+                  : "Hiện chưa có quyển sẵn sàng"}
+              </strong>
+              <span>
+                {book.available_quantity
+                  ? "Chọn lịch mượn để kiểm tra bản phù hợp."
+                  : "Bạn vẫn có thể kiểm tra lịch mượn gần nhất."}
+              </span>
             </div>
           </div>
           <div className="detail-description">
@@ -131,7 +155,10 @@ export function BookDetail() {
       {dialog && (
         <Modal title="Đặt mượn theo lịch" onClose={() => setDialog(false)}>
           <div className="reservation-form">
-            <p className="muted">{book.title}</p>
+            <p className="reservation-book">
+              <span>Tựa sách</span>
+              <strong>{book.title}</strong>
+            </p>
             <label>
               <FieldLabel required>Ngày muốn mượn</FieldLabel>
               <input
@@ -159,22 +186,12 @@ export function BookDetail() {
                 onChange={(event) => setDue(event.target.value)}
               />
             </label>
-            {availability && (
-              <div
-                className={
-                  availability.available ? "availability-ok" : "availability-no"
-                }
-              >
-                {availability.available ? (
-                  <>
-                    <strong>
-                      {availability.available_copy_count} quyển có thể mượn
-                    </strong>
-                    <span>Phù hợp đúng khoảng thời gian bạn đã chọn.</span>
-                  </>
-                ) : (
-                  `Chưa có quyển phù hợp.${availability.next_available_date ? ` Ngày mượn gần nhất: ${formatDate(availability.next_available_date)}.` : ""}`
-                )}
+            {availability && !availability.available && (
+              <div className="availability-no">
+                Chưa có quyển phù hợp.
+                {availability.next_available_date
+                  ? ` Ngày mượn gần nhất: ${formatDate(availability.next_available_date)}.`
+                  : ""}
               </div>
             )}
             <div className="modal-actions">

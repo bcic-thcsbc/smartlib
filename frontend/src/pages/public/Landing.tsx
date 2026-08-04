@@ -1,29 +1,74 @@
-import { ArrowRight, BookOpen } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 
-const libraryImage = "https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1200&q=85";
+const shelfBooks = [
+  "shelf-book-blue shelf-book-tall",
+  "shelf-book-orange shelf-book-high",
+  "shelf-book-gold shelf-book-medium",
+  "shelf-book-teal shelf-book-tall",
+  "shelf-book-slate shelf-book-short",
+];
+
+const lowerShelfBooks = [
+  "shelf-book-gold shelf-book-high",
+  "shelf-book-blue shelf-book-medium",
+  "shelf-book-teal shelf-book-medium",
+  "shelf-book-orange shelf-book-medium",
+  "shelf-book-slate shelf-book-high",
+  "shelf-book-blue shelf-book-high",
+];
 
 export function Landing() {
-  const { user, loading } = useAuth();
-  const libraryPath = user?.role === "admin" ? "/admin/dashboard" : "/user/dashboard";
+  const { user } = useAuth();
+  const libraryPath =
+    user?.role === "admin" ? "/admin/dashboard" : "/user/dashboard";
 
   return (
     <main className="landing landing-simple">
-      <header className="landing-header">
-        <Link to="/" className="landing-brand"><span><BookOpen size={21} aria-hidden="true" /></span>SMARTLIB</Link>
-        <nav>{loading ? <span className="nav-loading">Đang kiểm tra phiên...</span> : user ? <Link to={libraryPath}>Truy cập thư viện số</Link> : <><Link to="/login">Đăng nhập</Link><Link to="/register">Đăng ký</Link></>}</nav>
-      </header>
       <section className="landing-hero">
         <div className="hero-copy">
-          <p className="hero-school">Thư viện số Trường THCS Bình Chuẩn</p>
-          <h1>Thư viện số SmartLib</h1>
-          <p>Tra cứu sách, gửi yêu cầu mượn và theo dõi phiếu mượn trong một không gian rõ ràng, dễ dùng.</p>
+          <p className="hero-school">
+            <Sparkles size={17} aria-hidden="true" />
+            Thư viện THCS Bình Chuẩn
+          </p>
+          <h1>
+            <span>Đọc nhiều hơn.</span>
+            <span>Mượn sách dễ hơn.</span>
+          </h1>
+          <p>
+            Tra cứu tựa sách, xem lịch phục vụ của từng quyển và gửi yêu cầu
+            mượn theo thời gian bạn cần.
+          </p>
           <div className="hero-actions">
-            {user ? <Link className="primary" to={libraryPath}>Truy cập thư viện <ArrowRight size={18} aria-hidden="true" /></Link> : <><Link className="primary" to="/login">Đăng nhập <ArrowRight size={18} aria-hidden="true" /></Link><Link className="secondary" to="/register">Tạo tài khoản</Link></>}
+            {user ? (
+              <Link className="primary" to={libraryPath}>
+                Truy cập thư viện <ArrowRight size={18} aria-hidden="true" />
+              </Link>
+            ) : (
+              <>
+                <Link className="primary" to="/login">
+                  Đăng nhập <ArrowRight size={18} aria-hidden="true" />
+                </Link>
+                <Link className="secondary" to="/register">
+                  Tạo tài khoản
+                </Link>
+              </>
+            )}
           </div>
         </div>
-        <img className="hero-library-image" src={libraryImage} alt="Kệ sách trong thư viện" />
+        <div className="hero-library-scene" role="img" aria-label="Kệ sách">
+          <div className="shelf-row">
+            {shelfBooks.map((bookClass) => (
+              <span className={`shelf-book ${bookClass}`} key={bookClass} />
+            ))}
+          </div>
+          <div className="shelf-row">
+            {lowerShelfBooks.map((bookClass) => (
+              <span className={`shelf-book ${bookClass}`} key={bookClass} />
+            ))}
+          </div>
+        </div>
       </section>
     </main>
   );

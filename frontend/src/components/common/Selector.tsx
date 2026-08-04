@@ -1,4 +1,3 @@
-import { ChevronDown, Search } from "lucide-react";
 import {
   Children,
   isValidElement,
@@ -27,8 +26,18 @@ type SelectorProps = {
 type Option = {
   value: string;
   label: ReactNode;
+  searchText: string;
   disabled: boolean;
 };
+
+function textFromNode(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textFromNode).join("");
+  if (isValidElement<{ children?: ReactNode }>(node)) {
+    return textFromNode(node.props.children);
+  }
+  return "";
+}
 
 function optionsFromChildren(children: ReactNode): Option[] {
   return Children.toArray(children).flatMap((child) => {
@@ -46,6 +55,7 @@ function optionsFromChildren(children: ReactNode): Option[] {
       {
         value: String(child.props.value ?? ""),
         label: child.props.children,
+        searchText: textFromNode(child.props.children),
         disabled: Boolean(child.props.disabled),
       },
     ];
@@ -58,88 +68,99 @@ export function Selector({
   children,
   className = "",
   disabled = false,
-  searchable = false,
-  searchPlaceholder = "Tìm trong danh sách",
+  searchable: _searchable = true,
+  searchPlaceholder = "Tìm hoặc chọn mục",
   "aria-label": ariaLabel,
 }: SelectorProps) {
-  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [index, setIndex] = useState(0);
   const selectorId = useId();
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const options = useMemo(() => optionsFromChildren(children), [children]);
   const selected = options.find((option) => option.value === String(value));
-  const visibleOptions = options.filter((option) => {
-    if (!query.trim()) return true;
-    return String(option.label)
-      .toLocaleLowerCase()
-      .includes(query.toLocaleLowerCase());
-  });
+  const visibleOptions = options.filter((option) =>
+    option.searchText.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
+  );
 
   useEffect(() => {
-    if (!open) setQuery("");
-  }, [open]);
+    const list = listRef.current;
+    const item = list?.children[index] as HTMLElement | undefined;
+    item?.scrollIntoView({ block: "nearest" });
+  }, [index, visibleOptions]);
 
   const close = (returnFocus = false) => {
     setOpen(false);
-    if (returnFocus) requestAnimationFrame(() => triggerRef.current?.focus());
+    if (returnFocus) requestAnimationFrame(() => inputRef.current?.focus());
   };
 
   const choose = (option: Option) => {
     if (option.disabled) return;
     onChange?.({ target: { value: option.value } });
+    setQuery("");
     close(true);
   };
 
-  const handleTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      setOpen(true);
-    }
-  };
-
-  const handleMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const items = Array.from(
-      event.currentTarget.querySelectorAll<HTMLButtonElement>(
-        '[role="option"]:not([disabled])',
-      ),
-    );
-    const active = document.activeElement as HTMLButtonElement | null;
-    const index = items.indexOf(active as HTMLButtonElement);
-
-    if (event.key === "Escape") {
-      event.preventDefault();
-      close(true);
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (!open) {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        setIndex(0);
+        setOpen(true);
+      }
       return;
     }
 
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    if (event.key === "ArrowDown") {
       event.preventDefault();
-      const direction = event.key === "ArrowDown" ? 1 : -1;
-      const next =
-        items[(index + direction + items.length) % items.length] ?? items[0];
-      next?.focus();
+      setIndex((current) => Math.min(current + 1, visibleOptions.length - 1));
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setIndex((current) => Math.max(current - 1, 0));
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const option = visibleOptions[index];
+      if (option) choose(option);
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      close();
     }
   };
 
   return (
     <div className={`selector ${open ? "is-open" : ""} ${className}`}>
-      <button
-        ref={triggerRef}
+      <input
+        ref={inputRef}
         className="selector-trigger"
-        type="button"
-        aria-label={ariaLabel}
-        aria-haspopup="listbox"
-        aria-expanded={open}
+        value={selected ? selected.searchText : query}
+        placeholder={searchPlaceholder}
+        spellCheck={false}
+        aria-label={ariaLabel ?? searchPlaceholder}
+        aria-autocomplete="list"
         aria-controls={selectorId}
+        aria-expanded={open}
+        role="combobox"
         disabled={disabled}
-        onClick={() => setOpen((current) => !current)}
-        onKeyDown={handleTriggerKeyDown}
-      >
-        <span className={selected ? "" : "selector-placeholder"}>
-          {selected?.label ?? "Chọn một mục"}
-        </span>
-        <ChevronDown size={17} aria-hidden="true" />
-      </button>
+        onClick={(event) => {
+          setIndex(0);
+          setOpen(true);
+          event.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" });
+        }}
+        onKeyDown={handleKeyDown}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setIndex(0);
+          onChange?.({ target: { value: "" } });
+          setOpen(true);
+        }}
+      />
 
       {open && (
         <>
@@ -150,43 +171,26 @@ export function Selector({
             aria-label="Đóng danh sách"
             onClick={() => close()}
           />
-          <div
-            id={selectorId}
-            className="selector-menu"
-            role="listbox"
-            onKeyDown={handleMenuKeyDown}
-          >
-            {searchable && (
-              <label className="selector-search">
-                <Search size={15} aria-hidden="true" />
-                <input
-                  autoFocus
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder={searchPlaceholder}
-                  aria-label={searchPlaceholder}
-                />
-              </label>
-            )}
-            <div className="selector-options">
+          <div id={selectorId} className="selector-menu" role="listbox">
+            <div ref={listRef} className="selector-options">
               {visibleOptions.length ? (
-                visibleOptions.map((option) => (
+                visibleOptions.map((option, optionIndex) => (
                   <button
                     key={option.value || "__empty"}
-                    className={option.value === String(value) ? "selected" : ""}
+                    className={`${optionIndex === index ? "active" : ""} ${option.value === String(value) ? "selected" : ""
+                      }`}
                     type="button"
                     role="option"
                     aria-selected={option.value === String(value)}
                     disabled={option.disabled}
+                    onMouseEnter={() => setIndex(optionIndex)}
                     onClick={() => choose(option)}
                   >
                     {option.label}
                   </button>
                 ))
               ) : (
-                <p className="selector-empty">
-                  Không tìm thấy lựa chọn phù hợp.
-                </p>
+                <p className="selector-empty">Không tìm thấy lựa chọn phù hợp.</p>
               )}
             </div>
           </div>
